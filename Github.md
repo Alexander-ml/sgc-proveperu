@@ -25,7 +25,7 @@ Cada integrante debe realizar este proceso una sola vez en su equipo antes de cl
 Pasos
 1. ####  Generar clave SSH
 ```bash
-ssh-keygen -t ed25519 -C "tu_email@github.com"
+ssh-keygen -t ed25519 -C "tu_email"
 ``` 
 Presionar ENTER a todas las opciones.
 
@@ -37,9 +37,7 @@ cat ~/.ssh/id_ed25519.pub
 Copiar todo el contenido.
 
 3. #### Agregar clave en GitHub
-Ir a GitHub → Settings → SSH and GPG keys
-
-Click en New SSH key
+GitHub → Settings → SSH and GPG keys → New SSH key
 
 Pegar la clave copiada y guardar
 
@@ -165,22 +163,8 @@ git pull origin develop
 ## Paso 5 — Crear una rama personal para la tarea
 ### Ejemplo:
 
-Frontend hará login:
-
 ```bash
-git checkout -b feature/login-frontend
-```
-
-Backend hará JWT:
-
-```bash
-git checkout -b feature/auth-jwt
-```
-
-Docker:
-
-```bash
-git checkout -b feature/docker-compose
+git checkout -b feature/nombre-tarea
 ```
 
 ### Regla Importante
@@ -199,7 +183,7 @@ git status
 
 Muestra archivos modificados.
 
-## Paso 8 — Guardar cambios en Git
+## Paso 7 — Guardar cambios en Git
 
 Agregar archivos:
 
@@ -236,18 +220,18 @@ El formato: `tipo(alcance): descripción imperativa breve`
 - `chore(docker): agregar healthcheck al contenedor de base de datos`
 
 
-## Paso 9 — Subir rama a GitHub
+## Paso 8 — Subir rama a GitHub
 
 ```bash
-git push origin feature/login-frontend
+git push origin feature/nombre-tarea
 ```
 
-## Paso 10 — Crear Pull Request
+## Paso 9 — Crear Pull Request ir a GitHub
 
 Ir a GitHub y crear PR:
 
 ```text
-feature/login-frontend → develop
+feature/nombre-tarea → develop
 ```
 
 ### Qué debe escribir en el Pull Request
@@ -267,7 +251,7 @@ Implementar login frontend
 - Issue #12
 ```
 
-## Paso 11 — Revisión del Equipo
+## Paso 10 — Revisión del Equipo
 
 Otro integrante revisa:
 
@@ -278,7 +262,7 @@ Otro integrante revisa:
 
 Si está correcto: `Approve`
 
-## Paso 12 — Merge
+## Paso 11 — Merge
 
 Se integra a:
 
@@ -286,7 +270,17 @@ Se integra a:
 develop
 ```
 
-Luego eliminar rama.
+### Luego eliminar rama
+
+Elimina la rama en tu máquina
+```bash
+git branch -d feature/nombre-tarea
+```
+
+Elimina la rama en GitHub
+```bash
+git push origin --delete feature/nombre-tarea
+```
 
 ---
 
