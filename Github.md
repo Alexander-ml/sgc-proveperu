@@ -11,6 +11,52 @@ Organizar el trabajo del equipo para que:
 - todo cambio sea revisado
 - el proyecto avance profesionalmente
 
+## Configuración Inicial (una sola vez)
+
+Cada integrante ejecutar una vez:
+
+```bash
+git config --global user.name "Tu Nombre"
+git config --global user.email "correo@ejemplo.com"
+```
+
+### Configuración de clave SSH
+Cada integrante debe realizar este proceso una sola vez en su equipo antes de clonar el repositorio.
+Pasos
+1. ####  Generar clave SSH
+```bash
+ssh-keygen -t ed25519 -C "tu_email@github.com"
+``` 
+Presionar ENTER a todas las opciones.
+
+2. #### Copiar la clave pública
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copiar todo el contenido.
+
+3. #### Agregar clave en GitHub
+Ir a GitHub → Settings → SSH and GPG keys
+
+Click en New SSH key
+
+Pegar la clave copiada y guardar
+
+4. #### Verificar conexión
+```bash
+ssh -T git@github.com
+```
+
+Resultado esperado:
+
+Hi TU-USUARIO! You've successfully authenticated
+
+#### Resultado
+- Acceso a repositorios sin credenciales
+- Eliminación de errores de autenticación
+- Configuración lista para clonar con SSH
+
 ## Estructura de Ramas
 
 ```text
@@ -70,7 +116,7 @@ feature/modulo-ventas
 Cuando el integrante entra al proyecto por primera vez:
 
 ```bash
-git clone https://github.com/Alexander-ml/sgc-proveperu.git
+git clone git@github.com:Alexander-ml/sgc-proveperu.git
 ```
 
 Entrar a la carpeta:
@@ -255,16 +301,6 @@ borrar ramas ajenas
 merge sin revisar
 ```
 
-
-# Configuración Inicial Recomendable
-
-Cada integrante ejecutar una vez:
-
-```bash
-git config --global user.name "Tu Nombre"
-git config --global user.email "correo@ejemplo.com"
-```
-
 # Ejemplo Completo Real
 
 ```bash
@@ -277,5 +313,3 @@ git push origin feature/modulo-clientes-ui
 ```
 
 Luego PR a develop.
-
----
