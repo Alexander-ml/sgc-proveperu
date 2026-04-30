@@ -1,0 +1,47 @@
+# SEGURIDAD — NUNCA A GIT
+.env
+.env.local
+.env.*.local
+*.env
+*.local
+
+
+# FRONTEND
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.eslintcache
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# BACKEND
+backend/target/
+backend/.mvn/
+backend/*.jar
+backend/*.war
+backend/HELP.md
+
+# DOCKER / DATABASE
+database/backups/
+postgres-data/
+pgdata/
+*.sql.gz
+
+# SISTEMA OPERATIVO
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+*.sln
+*.sw?
