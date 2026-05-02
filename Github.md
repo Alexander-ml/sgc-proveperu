@@ -274,7 +274,7 @@ develop
 
 Elimina la rama en tu máquina
 ```bash
-git branch -d feature/nombre-tarea
+git branch -D feature/nombre-tarea
 ```
 
 Elimina la rama en GitHub
