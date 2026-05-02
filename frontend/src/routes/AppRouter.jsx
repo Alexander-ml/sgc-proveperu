@@ -6,7 +6,7 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={
-          <h1>Manos a la obra</h1>
+          <h1>Manos a la obra gente</h1>
           } />
       </Routes>
     </BrowserRouter>
