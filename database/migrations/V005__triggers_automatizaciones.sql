@@ -1,187 +1,142 @@
--- =============================================================
--- V005 — TRIGGERS AUTOMÁTICOS PARA INTEGRIDAD Y BUENAS PRÁCTICAS
--- =============================================================
+-- ============================================================
+-- V005__triggers_automatizaciones.sql
+-- Automatizaciones del sistema mediante triggers
+-- Base: schema corregido (venta, compra, inventario, caja)
+-- ============================================================
 
 
--- =============================================================
--- 1. ACTUALIZAR fecha_hora_actualizacion AUTOMÁTICAMENTE
--- =============================================================
 
-CREATE OR REPLACE FUNCTION trg_set_fecha_actualizacion()
+-- ============================================================
+-- 1. Trigger: validar fecha de sesión
+-- Evita que fecha_hora_fin sea menor que fecha_hora_inicio
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tg_validar_fechas_sesion()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.fecha_hora_actualizacion := CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Tablas que deben actualizar fecha_hora_actualizacion
-CREATE TRIGGER tg_update_usuario
-BEFORE UPDATE ON usuario
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_rol
-BEFORE UPDATE ON rol
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_cliente
-BEFORE UPDATE ON cliente
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_producto
-BEFORE UPDATE ON producto
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_proveedor
-BEFORE UPDATE ON proveedor
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_metodo_pago
-BEFORE UPDATE ON metodo_pago
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_venta
-BEFORE UPDATE ON venta
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_detalle_venta
-BEFORE UPDATE ON detalle_venta
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_pago
-BEFORE UPDATE ON pago
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_comprobante
-BEFORE UPDATE ON comprobante
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_compra
-BEFORE UPDATE ON compra
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_detalle_compra
-BEFORE UPDATE ON detalle_compra
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_recepcion_compra
-BEFORE UPDATE ON recepcion_compra
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_pago_compra
-BEFORE UPDATE ON pago_compra
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_movimiento_inventario
-BEFORE UPDATE ON movimiento_inventario
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_caja
-BEFORE UPDATE ON caja
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_apertura_caja
-BEFORE UPDATE ON apertura_caja
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_cierre_caja
-BEFORE UPDATE ON cierre_caja
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-CREATE TRIGGER tg_update_movimiento_caja
-BEFORE UPDATE ON movimiento_caja
-FOR EACH ROW EXECUTE FUNCTION trg_set_fecha_actualizacion();
-
-
-
--- =============================================================
--- 2. EVITAR ELIMINAR REGISTROS CON RELACIONES
--- =============================================================
--- En lugar de eliminar, pasamos estado_fisico = 'RELACIONADO'
-
-CREATE OR REPLACE FUNCTION trg_prevent_delete_relacionado()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Bloquea DELETE y cambia estado_fisico
-    UPDATE ONLY %TABLE_NAME%
-    SET estado_fisico = 'RELACIONADO',
-        estado_logico = 0
-    WHERE %PK% = OLD.%PK%;
-
-    RAISE EXCEPTION 'No se puede eliminar registro relacionado, marcado como RELACIONADO.';
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
--- Se aplicará a tablas sensibles
--- Para evitar errores y no repetir código generamos triggers directos
-
-CREATE OR REPLACE RULE prevent_delete_usuario AS
-ON DELETE TO usuario DO INSTEAD
-    UPDATE usuario SET estado_fisico='RELACIONADO', estado_logico=0 WHERE id_usuario=OLD.id_usuario;
-
-CREATE OR REPLACE RULE prevent_delete_producto AS
-ON DELETE TO producto DO INSTEAD
-    UPDATE producto SET estado_fisico='RELACIONADO', estado_logico=0 WHERE id_producto=OLD.id_producto;
-
-CREATE OR REPLACE RULE prevent_delete_cliente AS
-ON DELETE TO cliente DO INSTEAD
-    UPDATE cliente SET estado_fisico='RELACIONADO', estado_logico=0 WHERE id_cliente=OLD.id_cliente;
-
-CREATE OR REPLACE RULE prevent_delete_proveedor AS
-ON DELETE TO proveedor DO INSTEAD
-    UPDATE proveedor SET estado_fisico='RELACIONADO', estado_logico=0 WHERE id_proveedor=OLD.id_proveedor;
-
-
-
--- =============================================================
--- 3. IMPEDIR STOCK NEGATIVO
--- =============================================================
-
-CREATE OR REPLACE FUNCTION trg_prevent_negative_stock()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.cantidad_actual < 0 THEN
-        RAISE EXCEPTION 'Stock no puede ser negativo';
+    -- Si viene fecha_fin y es menor que fecha_inicio → error
+    IF NEW.fecha_hora_fin IS NOT NULL
+       AND NEW.fecha_hora_fin < NEW.fecha_hora_inicio THEN
+        RAISE EXCEPTION 'fecha_hora_fin no puede ser menor a fecha_hora_inicio';
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tg_stock_no_negativo
+CREATE TRIGGER tr_validar_fechas_sesion
+BEFORE INSERT OR UPDATE ON usuario_sesion
+FOR EACH ROW
+EXECUTE FUNCTION tg_validar_fechas_sesion();
+
+
+
+-- ============================================================
+-- 2. Trigger: actualizar stock automáticamente
+-- Este trigger NO modifica stock directamente.
+-- El movimiento real lo hace el SP sp_registrar_movimiento_inventario.
+-- Este trigger solo evita inserciones manuales inválidas.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tg_no_actualizar_stock_directo()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'No se puede modificar la tabla stock directamente. Use el procedimiento sp_registrar_movimiento_inventario.';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_no_update_stock
 BEFORE UPDATE ON stock
-FOR EACH ROW EXECUTE FUNCTION trg_prevent_negative_stock();
+FOR EACH ROW
+EXECUTE FUNCTION tg_no_actualizar_stock_directo();
 
 
 
--- =============================================================
--- 4. ASEGURAR estado_logico SOLO 0 o 1
--- =============================================================
+-- ============================================================
+-- 3. Trigger: validación automática de estados de venta
+-- Evita estados inválidos fuera de ('REGISTRADA','ANULADA')
+-- ============================================================
 
-CREATE OR REPLACE FUNCTION trg_check_estado_logico()
+CREATE OR REPLACE FUNCTION tg_validar_estado_venta()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.estado_logico NOT IN (0,1) THEN
-        RAISE EXCEPTION 'estado_logico solo puede ser 0 o 1';
+    IF NEW.estado_fisico NOT IN ('REGISTRADA','ANULADA') THEN
+        RAISE EXCEPTION 'Estado físico de venta inválido';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_validar_estado_venta
+BEFORE INSERT OR UPDATE ON venta
+FOR EACH ROW
+EXECUTE FUNCTION tg_validar_estado_venta();
+
+
+
+-- ============================================================
+-- 4. Trigger: validar estado de comprobante
+-- Solo ('EMITIDO','ANULADO')
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tg_validar_estado_comprobante()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.estado_fisico NOT IN ('EMITIDO','ANULADO') THEN
+        RAISE EXCEPTION 'Estado físico de comprobante inválido';
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Tablas que usan estado_logico
-CREATE TRIGGER tg_estado_usuario
-BEFORE INSERT OR UPDATE ON usuario
-FOR EACH ROW EXECUTE FUNCTION trg_check_estado_logico();
+CREATE TRIGGER tr_validar_estado_comprobante
+BEFORE INSERT OR UPDATE ON comprobante
+FOR EACH ROW
+EXECUTE FUNCTION tg_validar_estado_comprobante();
 
-CREATE TRIGGER tg_estado_producto
-BEFORE INSERT OR UPDATE ON producto
-FOR EACH ROW EXECUTE FUNCTION trg_check_estado_logico();
 
-CREATE TRIGGER tg_estado_cliente
-BEFORE INSERT OR UPDATE ON cliente
-FOR EACH ROW EXECUTE FUNCTION trg_check_estado_logico();
 
-CREATE TRIGGER tg_estado_proveedor
-BEFORE INSERT OR UPDATE ON proveedor
-FOR EACH ROW EXECUTE FUNCTION trg_check_estado_logico();
+-- ============================================================
+-- 5. Trigger: validar estado de caja
+-- Estados válidos: ('ABIERTA','CERRADA','INACTIVA')
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tg_validar_estado_caja()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.estado_fisico NOT IN ('ABIERTA','CERRADA','INACTIVA') THEN
+        RAISE EXCEPTION 'Estado físico de caja inválido';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_validar_estado_caja
+BEFORE INSERT OR UPDATE ON caja
+FOR EACH ROW
+EXECUTE FUNCTION tg_validar_estado_caja();
+
+
+
+-- ============================================================
+-- 6. Trigger: validar estado de movimiento de caja
+-- Estados válidos: ('REGISTRADO','ANULADO')
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tg_validar_estado_mov_caja()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.estado_fisico NOT IN ('REGISTRADO','ANULADO') THEN
+        RAISE EXCEPTION 'Estado de movimiento de caja inválido';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_validar_estado_mov_caja
+BEFORE INSERT OR UPDATE ON movimiento_caja
+FOR EACH ROW
+EXECUTE FUNCTION tg_validar_estado_mov_caja();
