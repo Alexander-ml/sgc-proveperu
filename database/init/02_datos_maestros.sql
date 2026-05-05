@@ -22,11 +22,11 @@ VALUES
 
 INSERT INTO usuario (nombre_completo, usuario_login, password_hash, id_rol)
 VALUES
-('Administrador General', 'admin@proveperu.com', 'HASH123', 1),
-('Carlos Pérez', 'carlos.perez@proveperu.com', 'HASH123', 2),
-('Lucía Ramos', 'lucia.ramos@proveperu.com', 'HASH123', 3),
-('Jorge Medina', 'jorge.medina@proveperu.com', 'HASH123', 4),
-('María Torres', 'maria.torres@proveperu.com', 'HASH123', 5);
+('Administrador General', 'admin@proveperu.com', '$2a$12$B2zfshox0A5K42Gs3yvOVuKs/.wdz8fv4hKoEPIX/.Y2i0oMd3A/e', 1),
+('Carlos Pérez', 'carlos.perez@proveperu.com', '$2a$12$B2zfshox0A5K42Gs3yvOVuKs/.wdz8fv4hKoEPIX/.Y2i0oMd3A/e', 2),
+('Lucía Ramos', 'lucia.ramos@proveperu.com', '$2a$12$B2zfshox0A5K42Gs3yvOVuKs/.wdz8fv4hKoEPIX/.Y2i0oMd3A/e', 3),
+('Jorge Medina', 'jorge.medina@proveperu.com', '$2a$12$B2zfshox0A5K42Gs3yvOVuKs/.wdz8fv4hKoEPIX/.Y2i0oMd3A/e', 4),
+('María Torres', 'maria.torres@proveperu.com', '$2a$12$B2zfshox0A5K42Gs3yvOVuKs/.wdz8fv4hKoEPIX/.Y2i0oMd3A/e', 5);
 
 -- ============================================
 -- 🔹 PERMISOS (actualizados según tu líder)

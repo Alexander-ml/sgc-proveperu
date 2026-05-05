@@ -1,13 +1,13 @@
 -- ==============================
 --   SCHEMA INICIAL PROVEPERU
---   PostgreSQL — 01_schema.sql
+--   PostgreSQL
 -- ==============================
 
 CREATE SCHEMA IF NOT EXISTS public;
 SET search_path TO public;
 
 -- =====================================================
--- 🟦 MÓDULO 1 — USUARIOS Y SEGURIDAD
+-- MÓDULO 1 — USUARIOS Y SEGURIDAD
 -- =====================================================
 
 -- ========== ROL ==========
@@ -76,7 +76,7 @@ CREATE TABLE usuario_sesion (
 );
 
 -- =====================================================
--- 🟩 MÓDULO 2 — CLIENTES (CRM)
+-- MÓDULO 2 — CLIENTES (CRM)
 -- =====================================================
 
 CREATE TABLE cliente (
@@ -96,7 +96,7 @@ CREATE TABLE cliente (
 );
 
 -- =====================================================
--- 🟨 MÓDULO 3 — ENTIDADES COMPARTIDAS
+-- MÓDULO 3 — ENTIDADES COMPARTIDAS
 -- =====================================================
 
 -- ========== PRODUCTO ==========
@@ -149,7 +149,7 @@ CREATE TABLE metodo_pago (
 );
 
 -- =====================================================
--- 🟥 MÓDULO 4 — VENTAS
+-- MÓDULO 4 — VENTAS
 -- =====================================================
 
 -- ========== VENTA ==========
@@ -208,7 +208,7 @@ CREATE TABLE comprobante (
 );
 
 -- =====================================================
--- 🟦 MÓDULO 5 — COMPRAS
+-- MÓDULO 5 — COMPRAS
 -- =====================================================
 
 -- ========== COMPRA ==========
@@ -261,7 +261,7 @@ CREATE TABLE pago_compra (
 );
 
 -- =====================================================
--- 🟧 MÓDULO 6 — INVENTARIO
+-- MÓDULO 6 — INVENTARIO
 -- =====================================================
 
 -- ========== TIPO MOVIMIENTO INVENTARIO ==========
@@ -298,7 +298,7 @@ CREATE TABLE movimiento_inventario (
 );
 
 -- =====================================================
--- 🟪 MÓDULO 7 — CAJA
+-- MÓDULO 7 — CAJA
 -- =====================================================
 
 -- ========== CAJA ==========

@@ -10,7 +10,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none            # none = no hace nada, update = actualiza el esquema, create = crea el esquema, create-drop = crea el esquema y lo borra al finalizar
+      # none = no hace nada, update = actualiza el esquema, create = crea el esquema, create-drop = crea el esquema y lo borra al finalizar
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -20,6 +21,11 @@ spring:
 
 server:
   port: ${BACKEND_PORT:8080}
+
+# JWT
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  expiration-ms: ${JWT_EXPIRATION_MS:28800000}
 
 management:
   endpoints:
