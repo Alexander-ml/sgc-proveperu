@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         var usuario = usuarioRepository
-                .findByUsuarioLoginAndEstado(username, "ACTIVO")
+                .findByUsuarioLoginAndEstadoFisico(username, "ACTIVO")
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Usuario no encontrado: " + username));
 

@@ -36,7 +36,7 @@ public class AuthService {
         // Si llegamos aquí, las credenciales son correctas
         // Cargar el usuario completo para construir la respuesta
         Usuario usuario = usuarioRepository
-                .findByUsuarioLoginAndEstado(request.getUsuarioLogin(), "ACTIVO")
+                .findByUsuarioLoginAndEstadoFisico(request.getUsuarioLogin(), "ACTIVO")
                 .orElseThrow();
 
         // Cargar UserDetails para generar el token
