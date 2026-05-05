@@ -18,8 +18,8 @@ public class ApiResponse<T> {
     // PARA RESPUESTAS EXITOSAS
     public static <T> ApiResponse<T> ok(String mensaje, T data){
         return ApiResponse.<T>builder()
-                .success(true) // indica si la operación fue exitosa (true)
-                .message(mensaje) // mensaje descriptivo
+                .success(true) // indica que la operación fue exitosa
+                .message(mensaje) // mensaje cliente
                 .data(data) // contenido de la respuesta
                 .timestamp(LocalDateTime.now()) // momento de la respuesta
                 .build();
@@ -28,8 +28,8 @@ public class ApiResponse<T> {
     // PARA RESPUESTAS FALLIDAS
     public static <T> ApiResponse<T> error(String message) {
         return ApiResponse.<T>builder()
-                .success(false) // indica si la operación fue exitosa (false)
-                .message(message) // mensaje descriptivo
+                .success(false) // indica que la operación no fue exitosa
+                .message(message) // mensaje cliente
                 .timestamp(LocalDateTime.now()) // momento de la respuesta
                 .build();
     }
