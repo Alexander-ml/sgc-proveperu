@@ -1,0 +1,14 @@
+package com.proveperu.usuarios.repository;
+
+import com.proveperu.usuarios.entity.Usuario;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
+    Optional<Usuario> findByUsuarioLoginAndEstadoFisico (String usuarioLogin, String estadoFisico);
+
+    boolean existsByUsuarioLogin(String usuarioLogin);
+}
