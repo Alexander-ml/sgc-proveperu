@@ -132,7 +132,8 @@ CREATE TABLE proveedor (
     estado_logico INTEGER NOT NULL DEFAULT 1 CHECK (estado_logico IN (0,1)),
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado_fisico IN ('ACTIVO','INACTIVO')),
-    fecha_hora_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    fecha_hora_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========== MÉTODO DE PAGO ==========
