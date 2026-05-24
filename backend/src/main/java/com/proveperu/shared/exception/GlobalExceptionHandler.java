@@ -14,10 +14,12 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
+/**
+ * Mecanismo centralizado de captura y transformación de excepciones*/
+@RestControllerAdvice // Intercepta excepciones globalmente en controladores REST
 public class GlobalExceptionHandler {
 
-    // Error de validación de campos (@Valid)
+    // ERROR DE VALIDACION DE CAMPOS (Captura errores generados por validaciones de DTOs anotados con @Valid.)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = new HashMap<>();
@@ -34,7 +36,8 @@ public class GlobalExceptionHandler {
                         .build()
         );
     }
-    // Credenciales incorrectas
+
+    // CREDENCIALES INCORRECTAS
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -46,7 +49,8 @@ public class GlobalExceptionHandler {
                         .build()
         );
     }
-    // Sin permiso para el recurso
+
+    // SIN PERMISOS PARA EL RECURSO
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
@@ -58,7 +62,8 @@ public class GlobalExceptionHandler {
                         .build()
         );
     }
-    // Recurso no encontrado
+
+    // RECURSO NO ENCONTRADO
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
@@ -70,7 +75,8 @@ public class GlobalExceptionHandler {
                         .build()
         );
     }
-    // Error genérico del servidor
+
+    // ERROR DEL SERVIDOR
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericError(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(

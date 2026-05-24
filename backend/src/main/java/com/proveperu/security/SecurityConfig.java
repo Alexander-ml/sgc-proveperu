@@ -22,9 +22,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Política de seguridad global del sistema*/
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity          // habilita @PreAuthorize en los controladores
+@EnableWebSecurity // Activa seguridad web
+@EnableMethodSecurity // habilita @PreAuthorize en los controladores
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -45,18 +47,17 @@ public class SecurityConfig {
 
                 // Reglas de autorización
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos (no requieren token)
+                        // Endpoints públicos, no requieren token
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/actuator/health",
                                 "/actuator/info"
                         ).permitAll()
-
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
                 )
 
-                // Sin sesión HTTP (stateless con JWT)
+                // Indica que la aplicación no mantendrá sesiones HTTP
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -64,7 +65,7 @@ public class SecurityConfig {
                 // Proveedor de autenticación
                 .authenticationProvider(authenticationProvider())
 
-                // Agregar el filtro JWT antes del filtro de usuario/contraseña
+                // Agregar el filtro JWT antes del filtro de usuario y contraseña
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -73,7 +74,11 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Proveedor de autenticación
+    /**
+     * Proveedor de autenticación responsable de:
+     * Validar credenciales
+     * Integrarse con la fuente de datos
+     * Construir el objeto Authentication válido*/
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
@@ -81,35 +86,48 @@ public class SecurityConfig {
         return provider;
     }
 
-    // Authentication Manager (lo usa AuthService para login)
+    /** Authentication Manager, Orquestador central de autenticación, encargado de:
+     * Recibir solicitudes de autenticación
+     * Delegar en uno o más AuthenticationProvider*/
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // Encoder de contraseñas BCrypt
+    // Hashea contraseñas antes de almacenarlas con BCrypt
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
-    // Configuración de CORS
+    /**Define la política de Cross-Origin Resource Sharing (CORS), permitiendo controlar:
+     * Qué orígenes pueden consumir la API
+     * Qué métodos HTTP están habilitados
+     * Qué headers son aceptados y expuestos*/
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // Orígenes Permitidos
         config.setAllowedOrigins(List.of(
                 "http://localhost",
                 "http://localhost:80",
                 "http://localhost:3000",
                 "http://localhost:5173"
         ));
+
+        // Métodos HTTP Permitidos
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Headers Permitidos
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        // Headers Expuestos
         config.setExposedHeaders(List.of("Authorization"));
+        // Credenciales
         config.setAllowCredentials(false);
+        // Tiempo de Cacheo
         config.setMaxAge(3600L);
 
+        // Aplica la configuración CORS a todas las rutas.
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

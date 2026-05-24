@@ -8,10 +8,10 @@ import lombok.Setter;
 @Setter
 @Builder
 public class LoginResponse {
-    private String token;
-    private String tipo;           // "Bearer"
-    private String usuarioLogin;
-    private String nombreCompleto;
-    private String rol;
-    private long expiresIn;        // milisegundos hasta expiración
+    private String token; // JWT generado
+    private String tipo;  // Tipo de autenticación ("Bearer")
+    private String usuarioLogin; // Identificador
+    private String nombreCompleto; // Información de usuario
+    private String rol; // Autorización
+    private long expiresIn; // Tiempo de expiración
 }
