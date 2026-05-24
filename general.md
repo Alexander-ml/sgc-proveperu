@@ -192,10 +192,13 @@ Estas variables las inyecta `docker-compose.yml` desde el `.env` de la raíz.
  
 ---
 
-## 4. Tipos de HTTP
+## 4. Metodos y Tipos de HTTP
  
 Los códigos de respuesta HTTP son el contrato entre backend y frontend. El frontend necesita saber exactamente qué significa cada código para mostrar el mensaje correcto al usuario.
- 
+
+- URL: [Ingresa Aqui para saber mas sobre METODOS HTTP](https://estilow3b.com/metodos-http-post-get-put-delete/)
+
+- URL: [Ingresa Aqui para poder saber un poco mas sobre TIPOS DE HTTP](https://es.semrush.com/blog/codigos-de-estado-http/)
 
 ---
  
@@ -204,3 +207,7 @@ Los códigos de respuesta HTTP son el contrato entre backend y frontend. El fron
 Nunca devolver un stack trace de Java como respuesta al frontend. El `GlobalExceptionHandler` intercepta todas las excepciones no manejadas y las convierte en respuestas JSON estructuradas con el código HTTP apropiado y un mensaje legible para el usuario. El stack trace va a los logs, no a la respuesta.
  
 ---  
+
+## 5. Invitacion al Postman
+
+- URL: [Invitacion a Postman](https://app.getpostman.com/join-team?invite_code=8037c6b9009eff00152decff48c075629223acaddbaa280afe5fe6df10ef1300&target_code=2eff4f92d06e747a9626d8e4113e4455)
