@@ -1,6 +1,6 @@
-package com.proveperu.usuarios.repository;
+package com.proveperu.m06_usuarios.repository;
 
-import com.proveperu.usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

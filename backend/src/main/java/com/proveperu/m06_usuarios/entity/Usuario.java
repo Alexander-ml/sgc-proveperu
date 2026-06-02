@@ -1,4 +1,4 @@
-package com.proveperu.usuarios.entity;
+package com.proveperu.m06_usuarios.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

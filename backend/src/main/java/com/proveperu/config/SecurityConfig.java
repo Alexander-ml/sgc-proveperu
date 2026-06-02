@@ -1,5 +1,7 @@
-package com.proveperu.security;
+package com.proveperu.config;
 
+import com.proveperu.security.JwtAuthenticationFilter;
+import com.proveperu.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

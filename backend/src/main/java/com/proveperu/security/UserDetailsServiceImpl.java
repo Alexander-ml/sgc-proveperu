@@ -1,7 +1,7 @@
 package com.proveperu.security;
 
 
-import com.proveperu.usuarios.repository.UsuarioRepository;
+import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;

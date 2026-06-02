@@ -3,8 +3,8 @@ package com.proveperu.auth.service;
 import com.proveperu.auth.dto.request.LoginRequest;
 import com.proveperu.auth.dto.response.LoginResponse;
 import com.proveperu.security.JwtService;
-import com.proveperu.usuarios.entity.Usuario;
-import com.proveperu.usuarios.repository.UsuarioRepository;
+import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,7 +20,8 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
-
+    /**
+     * @return - retornara  */
     public LoginResponse login(LoginRequest request) {
 
         // Delegar autenticación a Spring Security
