@@ -6,9 +6,11 @@ import org.springframework.stereotype.Service;
 import com.proveperu.m02_inventario.entity.MovimientoInventario;
 import com.proveperu.m02_inventario.entity.Producto;
 import com.proveperu.m02_inventario.entity.Stock;
+import com.proveperu.m02_inventario.entity.TipoMovimientoInventario;
 import com.proveperu.m02_inventario.repository.MovimientoInventarioRepository;
 import com.proveperu.m02_inventario.repository.ProductoRepository;
 import com.proveperu.m02_inventario.repository.StockRepository;
+import com.proveperu.m02_inventario.repository.TipoMovimientoInventarioRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +20,7 @@ public class InventarioService {
     private final ProductoRepository productoRepository;
     private final StockRepository stockRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
-
+private final TipoMovimientoInventarioRepository tipoMovimientoInventarioRepository;
     public List<Producto> listarProductos() {
         return productoRepository.findAll();
     }
@@ -30,4 +32,7 @@ public class InventarioService {
     public List<MovimientoInventario> listarMovimientos() {
         return movimientoInventarioRepository.findAll();
     }
+    public List<TipoMovimientoInventario> listarTiposMovimiento() {
+    return tipoMovimientoInventarioRepository.findAll();
+}
 }
