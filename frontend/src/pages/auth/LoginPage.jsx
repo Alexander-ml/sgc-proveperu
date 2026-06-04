@@ -7,7 +7,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [usuarioLogin, setUsuarioLogin] = useState('');
   const [password, setPassword] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
@@ -19,15 +19,19 @@ const LoginPage = () => {
     setCargando(true);
 
     try {
-      const respuesta = await login(username, password);
+      const respuesta = await login(usuarioLogin, password);
 
-      if (respuesta.rol === 'ADMIN' || respuesta.rol === 'ROLE_ADMIN') {
-        navigate('/usuarios');
-      } else {
-        navigate('/inventario');
-      }
+      console.log('Login correcto:', respuesta);
+
+      // Por ahora lo mandamos a la ruta raíz para no tocar más rutas
+      navigate('/');
     } catch (error) {
-      setError('Usuario o contraseña incorrectos');
+      console.error('Error en login:', error);
+
+      const mensaje =
+        error.response?.data?.message || 'Usuario o contraseña incorrectos';
+
+      setError(mensaje);
     } finally {
       setCargando(false);
     }
@@ -43,12 +47,12 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Usuario</label>
+            <label>Usuario o correo</label>
             <input
               type="text"
-              placeholder="Ingrese su usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin@proveperu.com"
+              value={usuarioLogin}
+              onChange={(e) => setUsuarioLogin(e.target.value)}
               required
             />
           </div>
