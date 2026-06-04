@@ -157,8 +157,8 @@ git pull origin develop
 | Comando                 | Función                 |
 | ----------------------- | ----------------------- |
 | git checkout develop    | cambia a develop        |
-| git pull origin develop | descarga cambios nuevos |
-
+|  | descarga cambios nuevos |
+git pull origin develop
 
 ## Paso 5 — Crear una rama personal para la tarea
 ### Ejemplo:
