@@ -127,3 +127,23 @@ VALUES
 INSERT INTO caja (nombre_caja, saldo_actual, estado_fisico)
 VALUES
 ('CAJA PRINCIPAL', 0, 'ABIERTA');
+
+-- ============================================
+-- 🔹 TIPOS MOVIMIENTO INVENTARIO
+-- ============================================
+
+INSERT INTO tipo_movimiento_inventario (nombre)
+VALUES
+('INGRESO'),
+('EGRESO'),
+('AJUSTE_POSITIVO'),
+('AJUSTE_NEGATIVO');
+
+-- ============================================
+-- 🔹 TIPOS MOVIMIENTO CAJA
+-- ============================================
+
+INSERT INTO tipo_movimiento_caja (nombre_tipo_movimiento)
+VALUES
+('INGRESO'),
+('EGRESO');
