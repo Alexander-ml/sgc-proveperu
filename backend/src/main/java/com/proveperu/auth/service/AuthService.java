@@ -8,8 +8,9 @@ import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,10 +19,8 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
-    private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
-    /**
-     * @return - retornara  */
+
     public LoginResponse login(LoginRequest request) {
 
         // Delegar autenticación a Spring Security
@@ -37,12 +36,19 @@ public class AuthService {
         // Si llegamos aquí, las credenciales son correctas
         // Cargar el usuario completo para construir la respuesta
         Usuario usuario = usuarioRepository
-                .findByUsuarioLoginAndEstadoFisico(request.getUsuarioLogin(), "ACTIVO")
-                .orElseThrow();
+                .findByUsuarioLogin(request.getUsuarioLogin())
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "Usuario no encontrado: " + request.getUsuarioLogin()
+                        ));
 
-        // Cargar UserDetails para generar el token
-        UserDetails userDetails = userDetailsService
-                .loadUserByUsername(request.getUsuarioLogin());
+        // Construcción local del UserDetails
+        UserDetails userDetails =
+                User.builder()
+                        .username(usuario.getUsuarioLogin())
+                        .password(usuario.getPasswordHash())
+                        .authorities("ROLE_" + usuario.getRol().getNombreRol())
+                        .build();
 
         // Generar el JWT con el rol incluido
         String token = jwtService.generateToken(

@@ -38,7 +38,7 @@ CREATE TABLE usuario (
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado_fisico IN ('ACTIVO','SUSPENDIDO')),
 
-    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,   
     fecha_hora_actualizacion TIMESTAMP,
 
     id_usuario_creador INTEGER REFERENCES usuario(id_usuario),
@@ -91,7 +91,7 @@ CREATE TABLE cliente (
     estado_logico INTEGER NOT NULL DEFAULT 1 CHECK (estado_logico IN (0,1)),
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado_fisico IN ('ACTIVO','INACTIVO')),
-    fecha_hora_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_hora_actualizacion TIMESTAMP
 );
 
@@ -99,7 +99,7 @@ CREATE TABLE cliente (
 -- MÓDULO 3 — ENTIDADES COMPARTIDAS
 -- =====================================================
 
--- ========== PRODUCTO ==========
+-- ========== PRODUCTO (Modulo Inventario) ==========
 CREATE TABLE producto (
     id_producto INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     codigo_producto VARCHAR(50) NOT NULL UNIQUE
@@ -114,7 +114,7 @@ CREATE TABLE producto (
     fecha_hora_actualizacion TIMESTAMP
 );
 
--- ========== STOCK ==========
+-- ========== STOCK (Modulo Inventario) ==========
 CREATE TABLE stock (
     id_producto INTEGER PRIMARY KEY REFERENCES producto(id_producto),
     cantidad_actual NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (cantidad_actual >= 0),
@@ -122,7 +122,7 @@ CREATE TABLE stock (
     fecha_hora_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ========== PROVEEDOR ==========
+-- ========== PROVEEDOR (Modulo Compras) ==========
 CREATE TABLE proveedor (
     id_proveedor INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ruc VARCHAR(11) NOT NULL UNIQUE CHECK (ruc ~ '^[0-9]{11}$'),
@@ -132,11 +132,11 @@ CREATE TABLE proveedor (
     estado_logico INTEGER NOT NULL DEFAULT 1 CHECK (estado_logico IN (0,1)),
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado_fisico IN ('ACTIVO','INACTIVO')),
-    fecha_hora_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_hora_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ========== MÉTODO DE PAGO ==========
+-- ========== MÉTODO DE PAGO (Modulo Compartido (Shared))==========
 CREATE TABLE metodo_pago (
     id_metodo_pago INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nombre_metodo_pago VARCHAR(50) NOT NULL UNIQUE,
@@ -158,13 +158,11 @@ CREATE TABLE venta (
     id_cliente INTEGER NOT NULL REFERENCES cliente(id_cliente),
     id_usuario INTEGER NOT NULL REFERENCES usuario(id_usuario),
 
-    -- SE ELIMINA id_metodo_pago (va en pago)
     fecha_hora_venta TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     total NUMERIC(10,2) NOT NULL CHECK (total >= 0),
 
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'REGISTRADA'
         CHECK (estado_fisico IN ('REGISTRADA','ANULADA'))
-    -- estado_lógico no aplica a ventas
 );
 
 -- ========== DETALLE VENTA ==========
@@ -183,7 +181,7 @@ CREATE TABLE pago (
     id_venta INTEGER NOT NULL REFERENCES venta(id_venta),
     id_metodo_pago INTEGER NOT NULL REFERENCES metodo_pago(id_metodo_pago),
     monto NUMERIC(10,2) NOT NULL CHECK (monto >= 0),
-    fecha_hora_pago TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     estado_logico INTEGER NOT NULL DEFAULT 1 CHECK (estado_logico IN (0,1)),
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'REGISTRADO'
         CHECK (estado_fisico IN ('REGISTRADO','ANULADO'))
@@ -216,7 +214,7 @@ CREATE TABLE compra (
     id_compra INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_proveedor INTEGER NOT NULL REFERENCES proveedor(id_proveedor),
     id_usuario_registro INTEGER NOT NULL REFERENCES usuario(id_usuario),
-    fecha_hora_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_hora_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     total NUMERIC(10,2) NOT NULL CHECK (total >= 0),
 
     estado_logico INTEGER NOT NULL DEFAULT 1 CHECK (estado_logico IN (0,1)),
