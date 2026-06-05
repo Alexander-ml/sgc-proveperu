@@ -23,8 +23,7 @@ const LoginPage = () => {
 
       console.log('Login correcto:', respuesta);
 
-      // Por ahora lo mandamos a la ruta raíz para no tocar más rutas
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       console.error('Error en login:', error);
 
