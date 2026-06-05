@@ -108,4 +108,24 @@ public class Compra extends BaseCreationEntity {
     @OneToMany(mappedBy = "compra", fetch = FetchType.LAZY)
     @Builder.Default
     private List<RecepcionCompra> recepcionesCompra = new ArrayList<>();
+    /**
+     * Pagos registrados para la compra.
+     *
+     * <p>
+     * La relación es bidireccional y está administrada por
+     * la entidad {@link PagoCompra} mediante el atributo
+     * {@code compra}.
+     * </p>
+     *
+     * <p>
+     * Cada registro representa un pago parcial
+     * o total realizado al proveedor.
+     * </p>
+     */
+    @OneToMany(
+            mappedBy = "compra",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<PagoCompra> pagos = new ArrayList<>();
 }

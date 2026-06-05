@@ -56,12 +56,14 @@ public class Stock {
     /**
      * Cantidad disponible actualmente.
      */
+    @Builder.Default
     @Column(name = "cantidad_actual", nullable = false, precision = 10, scale = 2)
     private BigDecimal cantidadActual = BigDecimal.ZERO;
 
     /**
      * Stock mínimo permitido antes de requerir reposición.
      */
+    @Builder.Default
     @Column(name = "stock_minimo", nullable = false, precision = 10, scale = 2)
     private BigDecimal stockMinimo = BigDecimal.ZERO;
 

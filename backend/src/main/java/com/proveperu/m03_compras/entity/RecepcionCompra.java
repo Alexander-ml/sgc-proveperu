@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "recepccion_compra")
+@Table(name = "recepcion_compra")
 public class RecepcionCompra {
     /**
      * Identificador único de la recepción.

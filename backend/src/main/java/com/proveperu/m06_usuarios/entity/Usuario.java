@@ -1,18 +1,24 @@
 package com.proveperu.m06_usuarios.entity;
 
+import com.proveperu.m02_inventario.entity.MovimientoInventario;
+import com.proveperu.m04_caja_pagos.entity.AperturaCaja;
+import com.proveperu.m06_usuarios.enums.EstadoUsuario;
+import com.proveperu.shared.entity.BaseAuditEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Representa un usuario autenticable dentro del sistema.
+ * Entidad que representa a un usuario del sistema.
  *
- * El usuario posee credenciales de acceso,
- * pertenece a un rol y puede participar
- * en procesos de auditoría.
+ * Contiene la información necesaria para autenticación,
+ * autorización y auditoría operativa.
+ *
+ * Hereda de {@link BaseAuditEntity}, incorporando información
+ * de auditoría como estado lógico, fecha de creación y fecha
+ * de última actualización.
  */
 @Getter
 @Setter
@@ -21,7 +27,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "usuario")
-public class Usuario  {
+public class Usuario  extends BaseAuditEntity {
 
     /**
      * Identificador único del usuario.
@@ -56,34 +62,26 @@ public class Usuario  {
     @JoinColumn(name = "id_rol", nullable = false)
     private Rol rol;
 
-    @Column(name = "estado_logico", nullable = false)
-    private Integer estadoLogico = 1; // 1 - 0
-
     /**
-     * Estado operativo del usuario.
+     * Estado físico del usuario.
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private String estadoFisico = "ACTIVO"; // "ACTIVO - SUSPENDIDO"
-
-    @Column(name = "fecha_hora_creacion", nullable = false, updatable = false)
-    private LocalDateTime fechaHoraCreacion;
-
-    @Column(name = "fecha_hora_actualizacion")
-    private LocalDateTime fechaHoraActualizacion;
+    private EstadoUsuario estadoFisico;
 
     /**
-     * Usuario que creó este registro.
+     * Usuario que creó el registro.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name = "id_usuario_creador")
-    private Integer idUsuarioCreador;
+    @JoinColumn(name = "id_usuario_creador")
+    private Usuario usuarioCreador;
 
     /**
      * Usuario que realizó la última actualización.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name = "id_usuario_actualizo")
-    private Integer idUsuarioActualizo;
+    @JoinColumn(name = "id_usuario_actualizo")
+    private Usuario usuarioActualizo;
 
     /**
      * Historial de sesiones iniciadas por el usuario.
@@ -95,4 +93,32 @@ public class Usuario  {
     @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
     @Builder.Default
     private List<UsuarioSesion> usuarioSesiones = new ArrayList<>();
+
+    /**
+     * Movimientos de inventario registrados
+     * por el usuario.
+     *
+     * La relación es administrada por
+     * {@link MovimientoInventario} mediante el atributo
+     * {@code usuarioRegistro}.
+     */
+    @OneToMany(mappedBy = "usuarioRegistro", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<MovimientoInventario> movimientosInventario = new ArrayList<>();
+
+    /**
+     * Aperturas de caja registradas por el usuario.
+     *
+     * <p>
+     * La relación es administrada por la entidad
+     * {@link AperturaCaja} mediante el atributo
+     * {@code usuarioRegistro}.
+     * </p>
+     */
+    @OneToMany(
+            mappedBy = "usuarioRegistro",
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<AperturaCaja> aperturasCaja = new ArrayList<>();
 }

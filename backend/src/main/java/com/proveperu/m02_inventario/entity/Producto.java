@@ -6,6 +6,9 @@ import com.proveperu.shared.enums.EstadoActivoInactivo;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Entidad que representa un producto dentro del sistema de inventario.
  *
@@ -64,4 +67,15 @@ public class Producto extends BaseAuditEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
     private EstadoActivoInactivo estadoFisico;
+
+    /**
+     * Movimientos registrados para el producto.
+     *
+     * La relación es administrada por
+     * {@link MovimientoInventario}
+     * mediante el atributo {@code producto}.
+     */
+    @OneToMany(mappedBy = "producto", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<MovimientoInventario> movimientosInventario = new ArrayList<>();
 }

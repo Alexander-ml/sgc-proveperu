@@ -1,8 +1,12 @@
 package com.proveperu.shared.entity;
 
+import com.proveperu.m03_compras.entity.PagoCompra;
 import com.proveperu.shared.enums.EstadoActivoInactivo;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Catálogo corporativo de métodos de pago disponibles
@@ -53,4 +57,17 @@ public class MetodoPago extends BaseAuditEntity{
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
     private EstadoActivoInactivo estadoFisico;
+
+    /**
+     * Pagos de compra realizados utilizando este método.
+     *
+     * <p>
+     * La relación es bidireccional y está administrada por
+     * la entidad {@link PagoCompra} mediante el atributo
+     * {@code metodoPago}.
+     * </p>
+     */
+    @OneToMany(mappedBy = "metodoPago", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<PagoCompra> pagosCompra = new ArrayList<>();
 }
