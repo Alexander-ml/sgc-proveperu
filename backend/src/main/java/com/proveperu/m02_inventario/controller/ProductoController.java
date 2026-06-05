@@ -14,8 +14,8 @@ import lombok.RequiredArgsConstructor;
 public class ProductoController {
        private final InventarioService inventarioService;
 
-    @GetMapping("/api/productos")
-    public List<Producto> listarProductos() {
-        return inventarioService.listarProductos();
-    }
+//    @GetMapping("/api/productos")
+//    public List<Producto> listarProductos() {
+//        return inventarioService.listarProductos();
+//    }
 }
