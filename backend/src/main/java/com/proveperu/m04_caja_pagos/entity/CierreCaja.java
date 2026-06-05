@@ -28,7 +28,7 @@ public class CierreCaja {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_cierre_caja")
-    private Integer id;
+    private Integer idCierreCaja;
 
     /**
      * Apertura asociada al cierre.

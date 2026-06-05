@@ -28,7 +28,7 @@ public class TipoMovimientoCaja {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_tipo_movimiento_caja")
-    private Integer id;
+    private Integer idTipoMovimientoCaja;
 
     /**
      * Tipo funcional del movimiento de caja.
