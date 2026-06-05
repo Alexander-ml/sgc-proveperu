@@ -36,7 +36,7 @@ public class MovimientoCaja {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_movimiento_caja")
-    private Integer id;
+    private Integer idMovimientoCaja;
 
     /**
      * Caja afectada.
