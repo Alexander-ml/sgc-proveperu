@@ -208,6 +208,20 @@ Nunca devolver un stack trace de Java como respuesta al frontend. El `GlobalExce
  
 ---  
 
-## 5. Invitacion al Postman
+## 5. Documentación de APIs
 
-- URL: [Invitacion a Postman](https://app.getpostman.com/join-team?invite_code=8037c6b9009eff00152decff48c075629223acaddbaa280afe5fe6df10ef1300&target_code=2eff4f92d06e747a9626d8e4113e4455)
+La documentación interactiva de los servicios REST se encuentra disponible mediante Swagger UI.
+
+### Acceso
+
+http://localhost:8080/swagger-ui/index.html#/
+
+### Funcionalidades
+
+- Visualización de endpoints disponibles.
+- Detalle de parámetros de entrada.
+- Modelos Request y Response.
+- Códigos de respuesta HTTP.
+- Prueba interactiva de los servicios mediante "Try it out".
+
+> Nota: La aplicación debe estar ejecutándose localmente para acceder a la documentación.

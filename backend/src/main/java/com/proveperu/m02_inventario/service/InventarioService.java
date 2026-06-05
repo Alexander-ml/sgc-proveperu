@@ -23,7 +23,9 @@ public class InventarioService {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
 
 private final TipoMovimientoInventarioRepository tipoMovimientoInventarioRepository;
+
     public List<Producto> listarProductos() {
+
         return productoRepository.findAll();
     }
 

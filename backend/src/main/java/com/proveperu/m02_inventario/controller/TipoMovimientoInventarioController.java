@@ -14,8 +14,8 @@ import lombok.RequiredArgsConstructor;
 public class TipoMovimientoInventarioController {
       private final InventarioService inventarioService;
 
-    @GetMapping("/api/tipos-movimiento-inventario")
-    public List<TipoMovimientoInventario> listarTiposMovimiento() {
-        return inventarioService.listarTiposMovimiento();
-    }
+//    @GetMapping("/api/tipos-movimiento-inventario")
+//    public List<TipoMovimientoInventario> listarTiposMovimiento() {
+//        return inventarioService.listarTiposMovimiento();
+//    }
 }
