@@ -11,6 +11,10 @@ import com.proveperu.m06_usuarios.enums.EstadoUsuario;
 import com.proveperu.m06_usuarios.repository.RolRepository;
 import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
+import com.proveperu.m06_usuarios.entity.Rol;
 import lombok.RequiredArgsConstructor;
 /**
  * Servicio encargado de gestionar las operaciones
@@ -34,6 +38,7 @@ public class UsuarioService {
      * Repositorio de roles.
      */
     private final RolRepository rolRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Obtiene los indicadores principales del dashboard
@@ -91,5 +96,24 @@ public List<UsuarioListadoResponse> listarUsuarios(String nombre) {
                     .estado(usuario.getEstadoFisico().name())
                     .build())
             .collect(Collectors.toList());
+}
+public void crearUsuario(CrearUsuarioRequest request) {
+
+    Rol rol = rolRepository.findById(request.getIdRol())
+            .orElseThrow(() ->
+                    new RuntimeException("Rol no encontrado")
+            );
+
+    Usuario usuario = Usuario.builder()
+            .nombreCompleto(request.getNombreCompleto())
+            .usuarioLogin(request.getUsuarioLogin())
+            .passwordHash(
+                    passwordEncoder.encode(request.getPassword())
+            )
+            .rol(rol)
+            .estadoFisico(EstadoUsuario.ACTIVO)
+            .build();
+
+    usuarioRepository.save(usuario);
 }
 }
