@@ -14,8 +14,11 @@ import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
+import com.proveperu.m06_usuarios.dto.request.EditarUsuarioRequest;
 import com.proveperu.m06_usuarios.entity.Rol;
 import lombok.RequiredArgsConstructor;
+
+import com.proveperu.m06_usuarios.dto.response.UsuarioDetalleResponse;
 /**
  * Servicio encargado de gestionar las operaciones
  * relacionadas con usuarios y roles.
@@ -113,6 +116,94 @@ public void crearUsuario(CrearUsuarioRequest request) {
             .rol(rol)
             .estadoFisico(EstadoUsuario.ACTIVO)
             .build();
+
+    usuarioRepository.save(usuario);
+}
+public void editarUsuario(
+        Integer idUsuario,
+        EditarUsuarioRequest request
+) {
+
+    Usuario usuario = usuarioRepository
+            .findById(idUsuario)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Usuario no encontrado"
+                    )
+            );
+
+    Rol rol = rolRepository
+            .findById(request.getIdRol())
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Rol no encontrado"
+                    )
+            );
+
+    usuario.setNombreCompleto(
+            request.getNombreCompleto()
+    );
+
+    usuario.setUsuarioLogin(
+            request.getUsuarioLogin()
+    );
+
+    usuario.setRol(rol);
+
+    usuario.setEstadoFisico(
+            EstadoUsuario.valueOf(
+                    request.getEstado().toUpperCase()
+            )
+    );
+
+    usuarioRepository.save(usuario);
+}
+public UsuarioDetalleResponse obtenerUsuarioPorId(Integer id) {
+
+    Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Usuario no encontrado"
+                    ));
+
+    return UsuarioDetalleResponse.builder()
+            .idUsuario(usuario.getIdUsuario())
+            .nombreCompleto(usuario.getNombreCompleto())
+            .usuarioLogin(usuario.getUsuarioLogin())
+            .idRol(usuario.getRol().getIdRol())
+            .rol(usuario.getRol().getNombreRol())
+            .estado(usuario.getEstadoFisico().name())
+            .build();
+}
+public void suspenderUsuario(Integer idUsuario) {
+
+    Usuario usuario = usuarioRepository
+            .findById(idUsuario)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Usuario no encontrado"
+                    )
+            );
+
+    usuario.setEstadoFisico(
+            EstadoUsuario.SUSPENDIDO
+    );
+
+    usuarioRepository.save(usuario);
+}
+public void activarUsuario(Integer idUsuario) {
+
+    Usuario usuario = usuarioRepository
+            .findById(idUsuario)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Usuario no encontrado"
+                    )
+            );
+
+    usuario.setEstadoFisico(
+            EstadoUsuario.ACTIVO
+    );
 
     usuarioRepository.save(usuario);
 }
