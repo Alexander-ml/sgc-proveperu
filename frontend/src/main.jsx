@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from './store/index';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
