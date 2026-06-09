@@ -3,6 +3,7 @@ package com.proveperu.shared.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -25,7 +26,7 @@ import java.time.LocalDateTime;
  * @param <T> tipo de dato transportado dentro de la respuesta.
  */
 @Getter
-@Builder
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL) // Los campos que tengan valor null NO se incluirán en el JSON de respuesta.
 public class ApiResponse<T> {
     /**
@@ -45,46 +46,38 @@ public class ApiResponse<T> {
      */
     private LocalDateTime timestamp;
 
-    /**
-     * Construye una respuesta exitosa utilizando el formato estándar de la API.
-     *
-     * <p>
-     * Este método centraliza la creación de respuestas satisfactorias,
-     * incorporando automáticamente la marca temporal de generación.
-     * </p>
-     *
-     * @param mensaje mensaje descriptivo asociado al resultado de la operación.
-     * @param data información de negocio que será retornada al consumidor.
-     * @param <T> tipo de dato contenido en la respuesta.
-     * @return instancia de {@link ApiResponse} configurada como respuesta exitosa.
-     */
-    public static <T> ApiResponse<T> ok(String mensaje, T data){
-        return ApiResponse.<T>builder()
-                .success(true)
-                .message(mensaje)
-                .data(data)
-                .timestamp(LocalDateTime.now())
-                .build();
+    private ApiResponse(boolean success, String message, T data) {
+        this.success  = success;
+        this.message  = message;
+        this.data     = data;
+        this.timestamp = LocalDateTime.now();
     }
 
-    /**
-     * Construye una respuesta de error controlado utilizando el formato
-     * estándar de la API.
-     *
-     * <p>
-     * Este método permite informar fallos funcionales o de negocio
-     * manteniendo una estructura de respuesta consistente para los clientes.
-     * </p>
-     *
-     * @param message descripción del error ocurrido.
-     * @param <T> tipo genérico de la respuesta.
-     * @return instancia de {@link ApiResponse} configurada como respuesta fallida.
-     */
+    // ----------------------------------------------------------------
+    // Métodos de fábrica — respuestas exitosas
+    // ----------------------------------------------------------------
+
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(true, "Operación exitosa", data);
+    }
+
+    public static <T> ApiResponse<T> success(T data, String message) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    public static <T> ApiResponse<T> successNoContent(String message) {
+        return new ApiResponse<>(true, message, null);
+    }
+
+    // ----------------------------------------------------------------
+    // Métodos de fábrica — respuestas con error
+    // ----------------------------------------------------------------
+
     public static <T> ApiResponse<T> error(String message) {
-        return ApiResponse.<T>builder()
-                .success(false)
-                .message(message)
-                .timestamp(LocalDateTime.now())
-                .build();
+        return new ApiResponse<>(false, message, null);
+    }
+
+    public static <T> ApiResponse<T> error(String message, T data) {
+        return new ApiResponse<>(false, message, data);
     }
 }
