@@ -74,7 +74,7 @@ public class AuthController {
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok(
-                ApiResponse.ok("Autenticación exitosa", response)
+                ApiResponse.success(response, "Autenticación exitosa")
         );
     }
 }

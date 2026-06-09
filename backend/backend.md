@@ -209,17 +209,6 @@ Esto cumple directamente el principio SRP.
 
 No debería depender de Controllers.
 
-**Estructura**
-```
-validators/
-
-├── annotation/ - Define la regla que podrá utilizarse desde DTOs. Representa el contrato de validación.
-│
-├── implementation/ - Contiene la lógica técnica que evalúa la regla.
-│
-├── specification/ - Contiene reglas complejas reutilizables del dominio. 
-│
-└── messages/ - Centraliza mensajes de error y textos reutilizables.
 ```
 
 ---

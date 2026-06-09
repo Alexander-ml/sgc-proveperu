@@ -71,9 +71,9 @@ public class UsuarioController {
                 usuarioService.obtenerDashboard();
 
         return ResponseEntity.ok(
-                ApiResponse.ok(
-                        "Dashboard obtenido correctamente",
-                        response
+                ApiResponse.success(
+                        response,
+                        "Dashboard obtenido correctamente"
                 )
         );
     }
@@ -97,9 +97,9 @@ public ResponseEntity<ApiResponse<List<UsuarioListadoResponse>>> listarUsuarios(
             usuarioService.listarUsuarios(nombre);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuarios obtenidos correctamente",
-                    response
+            ApiResponse.success(
+                response,
+                    "Usuarios obtenidos correctamente"
             )
     );
 }
@@ -115,9 +115,10 @@ public ResponseEntity<ApiResponse<String>> crearUsuario(
     usuarioService.crearUsuario(request);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuario creado correctamente",
-                    null
+            ApiResponse.success(
+                null,    
+                "Usuario creado correctamente"
+                    
             )
     );
 }
@@ -134,9 +135,9 @@ public ResponseEntity<ApiResponse<String>> editarUsuario(
     usuarioService.editarUsuario(id, request);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuario actualizado correctamente",
-                    null
+            ApiResponse.success(
+                null,
+                "Usuario actualizado correctamente"
             )
     );
 }
@@ -154,9 +155,10 @@ obtenerUsuarioPorId(
             usuarioService.obtenerUsuarioPorId(id);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuario obtenido correctamente",
-                    response
+            ApiResponse.success(
+                response,    
+                "Usuario obtenido correctamente"
+                    
             )
     );
 }
@@ -173,9 +175,9 @@ suspenderUsuario(
     usuarioService.suspenderUsuario(id);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuario suspendido correctamente",
-                    null
+            ApiResponse.success(
+                null,
+                    "Usuario suspendido correctamente"
             )
     );
 }
@@ -192,9 +194,9 @@ activarUsuario(
     usuarioService.activarUsuario(id);
 
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    "Usuario activado correctamente",
-                    null
+            ApiResponse.success(
+                null,    
+                "Usuario activado correctamente"                    
             )
     );
 }

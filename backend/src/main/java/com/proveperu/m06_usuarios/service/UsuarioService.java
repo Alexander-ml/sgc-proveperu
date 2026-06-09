@@ -73,138 +73,138 @@ public class UsuarioService {
                 .rolesDefinidos(rolesDefinidos)
                 .build();
             }
-/**
- * Obtiene la lista de usuarios registrados
- * en el sistema.
- *
- * @param nombre filtro opcional por nombre.
- * @return lista de usuarios.
- */
-public List<UsuarioListadoResponse> listarUsuarios(String nombre) {
+    /**
+     * Obtiene la lista de usuarios registrados
+     * en el sistema.
+     *
+     * @param nombre filtro opcional por nombre.
+     * @return lista de usuarios.
+     */
+    public List<UsuarioListadoResponse> listarUsuarios(String nombre) {
 
-    List<Usuario> usuarios;
+        List<Usuario> usuarios;
 
-    if (nombre == null || nombre.isBlank()) {
-        usuarios = usuarioRepository.findByNombreCompletoContainingIgnoreCase("");
-    } else {
-        usuarios = usuarioRepository.findByNombreCompletoContainingIgnoreCase(nombre);
+        if (nombre == null || nombre.isBlank()) {
+            usuarios = usuarioRepository.findByNombreCompletoContainingIgnoreCase("");
+        } else {
+            usuarios = usuarioRepository.findByNombreCompletoContainingIgnoreCase(nombre);
+        }
+
+        return usuarios.stream()
+                .map(usuario -> UsuarioListadoResponse.builder()
+                        .idUsuario(usuario.getIdUsuario())
+                        .nombreCompleto(usuario.getNombreCompleto())
+                        .usuarioLogin(usuario.getUsuarioLogin())
+                        .rol(usuario.getRol().getNombreRol())
+                        .estado(usuario.getEstadoFisico().name())
+                        .build())
+                .collect(Collectors.toList());
     }
+    public void crearUsuario(CrearUsuarioRequest request) {
 
-    return usuarios.stream()
-            .map(usuario -> UsuarioListadoResponse.builder()
-                    .idUsuario(usuario.getIdUsuario())
-                    .nombreCompleto(usuario.getNombreCompleto())
-                    .usuarioLogin(usuario.getUsuarioLogin())
-                    .rol(usuario.getRol().getNombreRol())
-                    .estado(usuario.getEstadoFisico().name())
-                    .build())
-            .collect(Collectors.toList());
-}
-public void crearUsuario(CrearUsuarioRequest request) {
+        Rol rol = rolRepository.findById(request.getIdRol())
+                .orElseThrow(() ->
+                        new RuntimeException("Rol no encontrado")
+                );
 
-    Rol rol = rolRepository.findById(request.getIdRol())
-            .orElseThrow(() ->
-                    new RuntimeException("Rol no encontrado")
-            );
+        Usuario usuario = Usuario.builder()
+                .nombreCompleto(request.getNombreCompleto())
+                .usuarioLogin(request.getUsuarioLogin())
+                .passwordHash(
+                        passwordEncoder.encode(request.getPassword())
+                )
+                .rol(rol)
+                .estadoFisico(EstadoUsuario.ACTIVO)
+                .build();
 
-    Usuario usuario = Usuario.builder()
-            .nombreCompleto(request.getNombreCompleto())
-            .usuarioLogin(request.getUsuarioLogin())
-            .passwordHash(
-                    passwordEncoder.encode(request.getPassword())
-            )
-            .rol(rol)
-            .estadoFisico(EstadoUsuario.ACTIVO)
-            .build();
+        usuarioRepository.save(usuario);
+    }
+    public void editarUsuario(
+            Integer idUsuario,
+            EditarUsuarioRequest request
+    ) {
 
-    usuarioRepository.save(usuario);
-}
-public void editarUsuario(
-        Integer idUsuario,
-        EditarUsuarioRequest request
-) {
+        Usuario usuario = usuarioRepository
+                .findById(idUsuario)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Usuario no encontrado"
+                        )
+                );
 
-    Usuario usuario = usuarioRepository
-            .findById(idUsuario)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Usuario no encontrado"
-                    )
-            );
+        Rol rol = rolRepository
+                .findById(request.getIdRol())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Rol no encontrado"
+                        )
+                );
 
-    Rol rol = rolRepository
-            .findById(request.getIdRol())
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Rol no encontrado"
-                    )
-            );
+        usuario.setNombreCompleto(
+                request.getNombreCompleto()
+        );
 
-    usuario.setNombreCompleto(
-            request.getNombreCompleto()
-    );
+        usuario.setUsuarioLogin(
+                request.getUsuarioLogin()
+        );
 
-    usuario.setUsuarioLogin(
-            request.getUsuarioLogin()
-    );
+        usuario.setRol(rol);
 
-    usuario.setRol(rol);
+        usuario.setEstadoFisico(
+                EstadoUsuario.valueOf(
+                        request.getEstado().toUpperCase()
+                )
+        );
 
-    usuario.setEstadoFisico(
-            EstadoUsuario.valueOf(
-                    request.getEstado().toUpperCase()
-            )
-    );
+        usuarioRepository.save(usuario);
+    }
+    public UsuarioDetalleResponse obtenerUsuarioPorId(Integer id) {
 
-    usuarioRepository.save(usuario);
-}
-public UsuarioDetalleResponse obtenerUsuarioPorId(Integer id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Usuario no encontrado"
+                        ));
 
-    Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Usuario no encontrado"
-                    ));
+        return UsuarioDetalleResponse.builder()
+                .idUsuario(usuario.getIdUsuario())
+                .nombreCompleto(usuario.getNombreCompleto())
+                .usuarioLogin(usuario.getUsuarioLogin())
+                .idRol(usuario.getRol().getIdRol())
+                .rol(usuario.getRol().getNombreRol())
+                .estado(usuario.getEstadoFisico().name())
+                .build();
+    }
+    public void suspenderUsuario(Integer idUsuario) {
 
-    return UsuarioDetalleResponse.builder()
-            .idUsuario(usuario.getIdUsuario())
-            .nombreCompleto(usuario.getNombreCompleto())
-            .usuarioLogin(usuario.getUsuarioLogin())
-            .idRol(usuario.getRol().getIdRol())
-            .rol(usuario.getRol().getNombreRol())
-            .estado(usuario.getEstadoFisico().name())
-            .build();
-}
-public void suspenderUsuario(Integer idUsuario) {
+        Usuario usuario = usuarioRepository
+                .findById(idUsuario)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Usuario no encontrado"
+                        )
+                );
 
-    Usuario usuario = usuarioRepository
-            .findById(idUsuario)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Usuario no encontrado"
-                    )
-            );
+        usuario.setEstadoFisico(
+                EstadoUsuario.SUSPENDIDO
+        );
 
-    usuario.setEstadoFisico(
-            EstadoUsuario.SUSPENDIDO
-    );
+        usuarioRepository.save(usuario);
+    }
+    public void activarUsuario(Integer idUsuario) {
 
-    usuarioRepository.save(usuario);
-}
-public void activarUsuario(Integer idUsuario) {
+        Usuario usuario = usuarioRepository
+                .findById(idUsuario)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Usuario no encontrado"
+                        )
+                );
 
-    Usuario usuario = usuarioRepository
-            .findById(idUsuario)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Usuario no encontrado"
-                    )
-            );
+        usuario.setEstadoFisico(
+                EstadoUsuario.ACTIVO
+        );
 
-    usuario.setEstadoFisico(
-            EstadoUsuario.ACTIVO
-    );
-
-    usuarioRepository.save(usuario);
-}
+        usuarioRepository.save(usuario);
+    } 
 }
