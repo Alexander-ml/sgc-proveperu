@@ -1,17 +1,20 @@
 package com.proveperu.auth.service;
 
-import com.proveperu.auth.dto.request.LoginRequest;
-import com.proveperu.auth.dto.response.LoginResponse;
-import com.proveperu.security.JwtService;
-import com.proveperu.m06_usuarios.entity.Usuario;
-import com.proveperu.m06_usuarios.repository.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.proveperu.auth.dto.request.LoginRequest;
+import com.proveperu.auth.dto.response.LoginResponse;
+import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.repository.UsuarioRepository;
+import com.proveperu.security.JwtService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Servicio de aplicación responsable de gestionar el proceso de autenticación
@@ -30,6 +33,7 @@ import org.springframework.stereotype.Service;
  * manteniendo desacoplada la lógica de autenticación de los controladores.
  * </p>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -81,6 +85,10 @@ public class AuthService {
         // Delegar autenticación a Spring Security
         // verifica credenciales con BCrypt automáticamente
         // lanza BadCredentialsException si son incorrectas
+        log.info(
+        "Intento de autenticación para el usuario: {}",
+        request.getUsuarioLogin()
+);
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsuarioLogin(),
@@ -95,7 +103,10 @@ public class AuthService {
                         new UsernameNotFoundException(
                                 "Usuario no encontrado: " + request.getUsuarioLogin()
                         ));
-
+        log.info(
+        "Usuario autenticado correctamente: {}",
+        usuario.getUsuarioLogin()
+);
         // Construcción local del UserDetails
         UserDetails userDetails =
                 User.builder()
@@ -109,7 +120,16 @@ public class AuthService {
                 userDetails,
                 usuario.getRol().getNombreRol()
         );
+log.info(
+        "JWT generado para usuario: {} con rol {}",
+        usuario.getUsuarioLogin(),
+        usuario.getRol().getNombreRol()
+);
 
+log.info(
+        "Login completado para usuario: {}",
+        usuario.getUsuarioLogin()
+);
         // Construir y devolver la respuesta
         return LoginResponse.builder()
                 .token(token)

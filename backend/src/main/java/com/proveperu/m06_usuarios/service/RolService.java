@@ -16,8 +16,10 @@ import com.proveperu.m06_usuarios.repository.RolPermisoRepository;
 import com.proveperu.m06_usuarios.repository.RolRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RolService {
     
     private final RolRepository rolRepository;
@@ -27,6 +29,7 @@ private final RolPermisoRepository rolPermisoRepository;
 
     public List<RolListadoResponse> listarRoles() {
 
+          log.info("Listando roles del sistema");
         List<Rol> roles = rolRepository.findAll();
 
         return roles.stream()
@@ -42,13 +45,20 @@ private final RolPermisoRepository rolPermisoRepository;
                 .collect(Collectors.toList());
     }
     public RolDetalleResponse obtenerRolPorId(Integer idRol) {
-
+   log.info("Consultando rol con id {}", idRol);
     Rol rol = rolRepository.findById(idRol)
             .orElseThrow(() ->
-                    new RuntimeException(
-                            "Rol no encontrado"
-                    )
+                   {
+
+            log.warn(
+                    "No se encontró el rol con id {}",
+                    idRol
             );
+
+            return new RuntimeException(
+                    "Rol no encontrado"
+            );
+        } );
 
     List<String> permisos =
             rol.getRolPermisos()
@@ -74,24 +84,36 @@ public void actualizarPermisosRol(
         Integer idRol,
         ActualizarPermisosRolRequest request
 ) {
-
+  log.info("Actualizando permisos del rol {}", idRol);
     Rol rol = rolRepository.findById(idRol)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Rol no encontrado"
-                    )
+            .orElseThrow(() -> {
+
+            log.warn(
+                    "Intento de actualizar permisos de un rol inexistente. Id: {}",
+                    idRol
             );
+
+            return new RuntimeException(
+                    "Rol no encontrado"
+            );
+        });
 
     rolPermisoRepository.deleteByRol(rol);
 
     for (Integer idPermiso : request.getPermisos()) {
 
         Permiso permiso = permisoRepository.findById(idPermiso)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Permiso no encontrado"
-                        )
-                );
+                .orElseThrow(() -> {
+
+            log.warn(
+                    "No se encontró el permiso con id {}",
+                    idPermiso
+            );
+
+            return new RuntimeException(
+                    "Permiso no encontrado"
+            );
+        });
 
         RolPermiso rolPermiso = RolPermiso.builder()
                 .id_rol_permiso(
@@ -106,5 +128,10 @@ public void actualizarPermisosRol(
 
         rolPermisoRepository.save(rolPermiso);
     }
+     log.info(
+            "Permisos actualizados para el rol {}. Total permisos: {}",
+            idRol,
+            request.getPermisos().size()
+    );
 }
 }
