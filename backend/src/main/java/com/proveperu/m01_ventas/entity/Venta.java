@@ -117,28 +117,6 @@ public class Venta {
     @Builder.Default
     private List<Pago> pagos = new ArrayList<>();
 
-    /**
-     * Comprobantes emitidos para esta venta.
-     *
-     * <p>
-     * La relación es bidireccional y está administrada por
-     * la entidad {@link Comprobante} mediante el atributo {@code venta}.
-     * </p>
-     *
-     * <p>
-     * Cada registro de {@link Comprobante} representa un
-     * documento comercial emitido como resultado de esta
-     * venta, como una boleta, factura o nota.
-     * </p>
-     *
-     * <p>
-     * No se utiliza propagación de operaciones
-     * ({@code CascadeType}) debido a que los comprobantes
-     * poseen relevancia legal y tributaria, por lo que su
-     * ciclo de vida debe administrarse explícitamente.
-     * </p>
-     */
-    @OneToMany(mappedBy = "venta", fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Comprobante> comprobantes = new ArrayList<>();
+    @OneToOne(mappedBy = "venta", fetch = FetchType.LAZY)
+    private Comprobante comprobante;
 }
