@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.proveperu.m06_usuarios.dto.request.EditarUsuarioRequest;
 import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
 
-import org.springframework.web.bind.annotation.PathVariable;
-
 import org.springframework.web.bind.annotation.PatchMapping;
 import com.proveperu.m06_usuarios.dto.response.UsuarioDetalleResponse;
 /**
@@ -77,7 +75,8 @@ public class UsuarioController {
                 )
         );
     }
-    /**
+
+/**
  * Obtiene la lista de usuarios registrados
  * en el sistema.
  *
@@ -103,6 +102,8 @@ public ResponseEntity<ApiResponse<List<UsuarioListadoResponse>>> listarUsuarios(
             )
     );
 }
+
+
 @Operation(
         summary = "Crear usuario",
         description = "Registra un nuevo usuario en el sistema."
@@ -122,6 +123,8 @@ public ResponseEntity<ApiResponse<String>> crearUsuario(
             )
     );
 }
+
+
 @Operation(
         summary = "Editar usuario",
         description = "Actualiza la información de un usuario existente."
@@ -141,6 +144,8 @@ public ResponseEntity<ApiResponse<String>> editarUsuario(
             )
     );
 }
+
+
 @Operation(
         summary = "Obtener usuario por ID",
         description = "Obtiene la información completa de un usuario."
@@ -162,6 +167,8 @@ obtenerUsuarioPorId(
             )
     );
 }
+
+
 @Operation(
         summary = "Suspender usuario",
         description = "Cambia el estado del usuario a SUSPENDIDO."
@@ -181,6 +188,8 @@ suspenderUsuario(
             )
     );
 }
+
+
 @Operation(
         summary = "Activar usuario",
         description = "Cambia el estado del usuario a ACTIVO."
