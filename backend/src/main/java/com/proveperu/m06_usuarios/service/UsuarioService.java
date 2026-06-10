@@ -100,6 +100,7 @@ public class UsuarioService {
                         .build())
                 .collect(Collectors.toList());
     }
+
     public void crearUsuario(CrearUsuarioRequest request) {
 
         Rol rol = rolRepository.findById(request.getIdRol())
@@ -119,6 +120,7 @@ public class UsuarioService {
 
         usuarioRepository.save(usuario);
     }
+    
     public void editarUsuario(
             Integer idUsuario,
             EditarUsuarioRequest request
