@@ -6,8 +6,13 @@ const Sidebar = () => {
       className="text-white d-flex flex-column"
       style={{
         width: '260px',
-        minHeight: '100vh',
+        height: '100vh',
         background: '#08224a',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        zIndex: 3000,
+        overflowY: 'auto',
       }}
     >
       <div className="px-4 py-4">
@@ -16,31 +21,31 @@ const Sidebar = () => {
 
       <div className="px-3">
         <p className="text-uppercase text-white-50 small mb-2">Principal</p>
-        <SidebarItem label="Panel Principal" active />
+        <SidebarItem label="Panel Principal" to="/home" />
 
         <p className="text-uppercase text-white-50 small mt-4 mb-2">
           Operaciones
         </p>
-        <SidebarItem label="Ventas" />
-        <SidebarItem label="Inventario" />
-        <SidebarItem label="Compras" />
-        <SidebarItem label="Caja / Pagos" />
+        <SidebarItem label="Ventas" to="/ventas" />
+        <SidebarItem label="Inventario" to="/inventario" />
+        <SidebarItem label="Compras" to="/compras" />
+        <SidebarItem label="Caja / Pagos" to="/caja" />
 
         <p className="text-uppercase text-white-50 small mt-4 mb-2">
           Análisis Gerencial
         </p>
-        <SidebarItem label="Reportes" />
+        <SidebarItem label="Reportes" to="/reportes" />
 
         <p className="text-uppercase text-white-50 small mt-4 mb-2">
           Gestión de Clientes
         </p>
-        <SidebarItem label="Clientes" />
-        <SidebarItem label="Historial Compras" />
+        <SidebarItem label="Clientes" to="/clientes" />
+        <SidebarItem label="Historial Compras" to="/historial-compras" />
 
         <p className="text-uppercase text-white-50 small mt-4 mb-2">
           Administración
         </p>
-        <SidebarItem label="Usuarios y Roles" />
+        <SidebarItem label="Usuarios y Roles" to="/usuarios-roles" />
       </div>
 
       <div className="mt-auto px-4 py-4">

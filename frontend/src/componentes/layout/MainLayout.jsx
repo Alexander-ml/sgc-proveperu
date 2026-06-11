@@ -3,10 +3,23 @@ import Navbar from './Navbar';
 
 const MainLayout = ({ children }) => {
   return (
-    <div className="d-flex bg-light" style={{ minHeight: '100vh' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f8f9fa',
+      }}
+    >
       <Sidebar />
 
-      <main className="flex-grow-1 p-4">
+      <main
+        style={{
+          marginLeft: '260px',
+          minHeight: '100vh',
+          padding: '24px',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         <Navbar />
         {children}
       </main>
