@@ -39,7 +39,7 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
     @Query("""
             SELECT p FROM Pago p
             JOIN FETCH p.metodoPago mp
-            WHERE p.venta.idVenta IN :ventaIds
+            WHERE p.venta.idVenta IN :idVenta
             AND p.estadoLogico = com.proveperu.shared.enums.EstadoLogico.ACTIVO
             ORDER BY p.venta.idVenta ASC, p.fechaHoraCreacion ASC
             """)

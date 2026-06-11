@@ -3,17 +3,19 @@ package com.proveperu.m01_ventas.service.impl;
 import com.proveperu.m01_ventas.dto.request.VentaFiltroRequest;
 import com.proveperu.m01_ventas.dto.response.ComprobanteResumenDTO;
 import com.proveperu.m01_ventas.dto.response.MetodoPagoVentaResumenDTO;
+import com.proveperu.m01_ventas.dto.response.VentaDetalleResponseDTO;
 import com.proveperu.m01_ventas.dto.response.VentaResumenResponseDTO;
 import com.proveperu.m01_ventas.entity.Comprobante;
+import com.proveperu.m01_ventas.entity.DetalleVenta;
 import com.proveperu.m01_ventas.entity.Pago;
 import com.proveperu.m01_ventas.entity.Venta;
+import com.proveperu.m01_ventas.mapper.VentaDetalleMapper;
 import com.proveperu.m01_ventas.mapper.VentaMapper;
-import com.proveperu.m01_ventas.repository.ComprobanteRepository;
-import com.proveperu.m01_ventas.repository.PagoRepository;
-import com.proveperu.m01_ventas.repository.VentaRepository;
-import com.proveperu.m01_ventas.repository.VentaSpecification;
+import com.proveperu.m01_ventas.repository.*;
 import com.proveperu.m01_ventas.service.VentaService;
+import com.proveperu.m01_ventas.validators.VentaDetalleValidator;
 import com.proveperu.m01_ventas.validators.VentaFiltroValidator;
+import com.proveperu.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
@@ -64,6 +67,10 @@ public class VentaServiceImpl implements VentaService {
     private final ComprobanteRepository comprobanteRepository;
     private final VentaMapper ventaMapper;
     private final VentaFiltroValidator ventaFiltroValidator;
+
+    private final DetalleVentaRepository detalleVentaRepository;
+    private final VentaDetalleMapper ventaDetalleMapper;
+    private final VentaDetalleValidator ventaDetalleValidator;
 
     /**
      * Obtiene un listado paginado de ventas con filtros funcionales,
@@ -294,4 +301,124 @@ public class VentaServiceImpl implements VentaService {
     private Page<VentaResumenResponseDTO> paginaVacia(Pageable pageable, long totalElements) {
         return new PageImpl<>(Collections.emptyList(), pageable, totalElements);
     }
+
+    /**
+     * Obtiene el detalle completo de una venta: cabecera, cliente, vendedor,
+     * comprobante, productos y pagos con valores derivados calculados.
+     *
+     * <p>
+     * El flujo opera en tres fases:
+     * </p>
+     * <ol>
+     *     <li>Validación del identificador recibido.</li>
+     *     <li>Carga de la venta con sus relaciones en batch para evitar N+1.</li>
+     *     <li>Cálculo de subtotalGeneral, montoPagadoTotal y cambio.</li>
+     * </ol>
+     *
+     * <p>
+     * Se aplica {@code @Transactional(readOnly = true)} heredado de la clase.
+     * </p>
+     *
+     * @param idVenta identificador técnico de la venta.
+     * @return DTO completo con toda la información para la vista de detalle.
+     */
+    @Override
+    public VentaDetalleResponseDTO obtenerDetalleVenta(Integer idVenta) {
+
+        ventaDetalleValidator.validar(idVenta);
+
+        Venta venta = ventaRepository.findDetalleCompletoById(idVenta).orElseThrow(() -> new ResourceNotFoundException("Venta", idVenta));
+
+        List<DetalleVenta> detalles = detalleVentaRepository.findDetalleConProductoByVentaId(idVenta);
+
+        List<Pago> pagos = pagoRepository.findPagosActivosByVentaId(idVenta);
+
+        VentaDetalleResponseDTO dto = ventaDetalleMapper.toDetalleDTO(venta);
+
+        dto.setNumeroVenta(construirNumeroVenta(venta));
+
+        if (venta.getCliente() != null) {
+            dto.setCliente(ventaDetalleMapper.toClienteDetalleDTO(venta.getCliente()));
+        }
+
+        dto.setVendedor(ventaDetalleMapper.toUsuarioDetalleDTO(venta.getUsuario()));
+        dto.setTipoVendedor(resolverTipoVendedor(venta));
+
+        if (venta.getComprobante() != null) {
+            dto.setComprobante(
+                    ventaDetalleMapper.toComprobanteDetalleDTO(venta.getComprobante())
+            );
+        }
+
+        dto.setPagos(ventaDetalleMapper.toPagoDetalleDTOList(pagos));
+        dto.setProductos(ventaDetalleMapper.toDetalleProductoDTOList(detalles));
+
+        BigDecimal subtotalGeneral = calcularSubtotalGeneral(detalles);
+        BigDecimal montoPagadoTotal = calcularMontoPagadoTotal(pagos);
+        BigDecimal cambio = calcularCambio(montoPagadoTotal, venta.getTotal());
+
+        dto.setSubtotalGeneral(subtotalGeneral);
+        dto.setMontoPagadoTotal(montoPagadoTotal);
+        dto.setCambio(cambio);
+
+        return dto;
+    }
+
+    /**
+     * Calcula la suma de subtotales de todos los productos incluidos en la venta.
+     *
+     * @param detalles lista de detalles de venta.
+     * @return suma de subtotales; cero si la lista está vacía.
+     */
+    private BigDecimal calcularSubtotalGeneral(List<DetalleVenta> detalles) {
+        if (detalles == null || detalles.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        return detalles.stream()
+                .map(DetalleVenta::getSubtotal)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Calcula la suma de montos de todos los pagos activos de la venta.
+     *
+     * @param pagos lista de pagos activos.
+     * @return suma de montos; cero si la lista está vacía.
+     */
+    private BigDecimal calcularMontoPagadoTotal(List<Pago> pagos) {
+        if (pagos == null || pagos.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        return pagos.stream()
+                .map(Pago::getMonto)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Calcula el cambio a devolver al cliente.
+     *
+     * <p>
+     * El cambio es la diferencia entre el monto pagado y el total de la venta.
+     * Si el monto pagado es menor o igual al total, el cambio es cero.
+     * </p>
+     *
+     * @param montoPagado monto total pagado.
+     * @param totalVenta  total de la venta.
+     * @return cambio calculado; nunca negativo.
+     */
+    private BigDecimal calcularCambio(BigDecimal montoPagado, BigDecimal totalVenta) {
+        if (montoPagado == null || totalVenta == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal diferencia = montoPagado.subtract(totalVenta);
+        return diferencia.compareTo(BigDecimal.ZERO) > 0
+                ? diferencia
+                : BigDecimal.ZERO;
+    }
+
 }
