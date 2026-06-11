@@ -18,6 +18,7 @@ import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 /**
  * Servicio encargado de gestionar las operaciones
  * relacionadas con usuarios y roles.
@@ -129,6 +130,7 @@ log.info(
                 )
                 .rol(rol)
                 .estadoFisico(EstadoUsuario.ACTIVO)
+                
                 .build();
 
         usuarioRepository.save(usuario);

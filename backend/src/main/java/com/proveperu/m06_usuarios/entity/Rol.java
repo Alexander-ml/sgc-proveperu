@@ -1,12 +1,26 @@
 package com.proveperu.m06_usuarios.entity;
 
-import com.proveperu.shared.entity.BaseAuditEntity;
-import com.proveperu.shared.enums.EstadoActivoInactivo;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.proveperu.shared.entity.BaseAuditEntity;
+import com.proveperu.shared.enums.EstadoActivoInactivo;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Entidad que representa un rol dentro del sistema.
