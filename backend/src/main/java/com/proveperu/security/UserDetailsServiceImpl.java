@@ -78,7 +78,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                                 "Usuario no encontrado: " + username
                         ));
 
-        if (usuario.getEstadoFisico() != EstadoUsuario.ACTIVO) {
+        if (usuario.getEstadoUsuario() != EstadoUsuario.ACTIVO) {
             throw new UsernameNotFoundException(
                     "Usuario suspendido"
             );

@@ -77,5 +77,5 @@ public class Pago extends BaseCreationEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoPago estadoFisico;
+    private EstadoPago estadoPago;
 }

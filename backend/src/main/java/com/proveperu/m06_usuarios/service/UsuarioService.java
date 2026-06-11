@@ -54,12 +54,12 @@ public class UsuarioService {
         Long totalUsuarios = usuarioRepository.count();
 
         Long usuariosActivos =
-                usuarioRepository.countByEstadoFisico(
+                usuarioRepository.countByEstadoUsuario(
                         EstadoUsuario.ACTIVO
                 );
 
         Long usuariosSuspendidos =
-                usuarioRepository.countByEstadoFisico(
+                usuarioRepository.countByEstadoUsuario(
                         EstadoUsuario.SUSPENDIDO
                 );
 
@@ -96,7 +96,7 @@ public class UsuarioService {
                         .nombreCompleto(usuario.getNombreCompleto())
                         .usuarioLogin(usuario.getUsuarioLogin())
                         .rol(usuario.getRol().getNombreRol())
-                        .estado(usuario.getEstadoFisico().name())
+                        .estado(usuario.getEstadoUsuario().name())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -115,7 +115,7 @@ public class UsuarioService {
                         passwordEncoder.encode(request.getPassword())
                 )
                 .rol(rol)
-                .estadoFisico(EstadoUsuario.ACTIVO)
+                .estadoUsuario(EstadoUsuario.ACTIVO)
                 .build();
 
         usuarioRepository.save(usuario);
@@ -152,7 +152,7 @@ public class UsuarioService {
 
         usuario.setRol(rol);
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.valueOf(
                         request.getEstado().toUpperCase()
                 )
@@ -174,7 +174,7 @@ public class UsuarioService {
                 .usuarioLogin(usuario.getUsuarioLogin())
                 .idRol(usuario.getRol().getIdRol())
                 .rol(usuario.getRol().getNombreRol())
-                .estado(usuario.getEstadoFisico().name())
+                .estado(usuario.getEstadoUsuario().name())
                 .build();
     }
     public void suspenderUsuario(Integer idUsuario) {
@@ -187,7 +187,7 @@ public class UsuarioService {
                         )
                 );
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.SUSPENDIDO
         );
 
@@ -203,7 +203,7 @@ public class UsuarioService {
                         )
                 );
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.ACTIVO
         );
 

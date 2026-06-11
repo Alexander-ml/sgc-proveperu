@@ -2,6 +2,9 @@ package com.proveperu.m01_ventas.dto.response;
 
 import lombok.*;
 
+/**
+ * DTO resumido del usuario vendedor.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

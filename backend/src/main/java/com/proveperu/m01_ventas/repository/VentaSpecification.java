@@ -4,6 +4,8 @@ import com.proveperu.m01_ventas.dto.request.VentaFiltroRequest;
 import com.proveperu.m01_ventas.entity.Comprobante;
 import com.proveperu.m01_ventas.entity.Pago;
 import com.proveperu.m01_ventas.entity.Venta;
+import com.proveperu.m01_ventas.enums.EstadoVenta;
+import com.proveperu.m01_ventas.enums.TipoComprobante;
 import com.proveperu.m05_gestion_clientes.entity.Cliente;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -15,40 +17,75 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+/**
+ * Especificación JPA utilizada para construir filtros dinámicos sobre la entidad {@link Venta}.
+ *
+ * <p>
+ * Esta clase concentra la traducción de criterios funcionales del listado de ventas
+ * hacia predicados Criteria API, permitiendo componer consultas flexibles sin exponer
+ * lógica de persistencia en la capa de servicio.
+ * </p>
+ *
+ * <p>
+ * El diseño está orientado al caso de uso de búsqueda y paginación de ventas,
+ * incluyendo filtros por cliente, comprobante, estado, método de pago, número visual
+ * y rango de fechas.
+ * </p>
+ */
 public class VentaSpecification {
     private VentaSpecification() {}
 
     /**
-     * Construye la Specification dinámica para filtrar ventas.
+     * Construye una {@link Specification} dinámica para filtrar ventas según los criterios
+     * recibidos en el DTO de filtro.
      *
-     * Nota sobre numeroVenta:
-     * El número visual "V-{AÑO}-{ID_6}" es derivado.
-     * Si el filtro numeroVenta tiene el formato esperado, se extrae el id numérico
-     * final y se aplica el predicado sobre id_venta directamente.
-     * Si no tiene el formato esperado, se ignora ese filtro silenciosamente
-     * para evitar errores por entradas malformadas.
+     * <p>
+     * Los filtros soportados incluyen:
+     * </p>
+     * <ul>
+     *     <li>Búsqueda global sobre cliente y comprobante.</li>
+     *     <li>Filtro por cliente exacto.</li>
+     *     <li>Filtro por número visual derivado de la venta.</li>
+     *     <li>Filtro por tipo de comprobante.</li>
+     *     <li>Filtro por estado de la venta.</li>
+     *     <li>Filtro por método de pago.</li>
+     *     <li>Filtro por rango de fechas.</li>
+     * </ul>
+     *
+     * <p>
+     * Cuando el número visual no cumple el formato esperado, el filtro se ignora para
+     * evitar errores por entradas malformadas.
+     * </p>
+     *
+     * @param filtro criterios de consulta enviados por la capa web.
+     * @return especificación lista para ser usada por {@code JpaSpecificationExecutor}.
      */
     public static Specification<Venta> conFiltros(VentaFiltroRequest filtro) {
         return (root, query, cb) -> {
+            if (filtro == null) {
+                return cb.conjunction();
+            }
+
             List<Predicate> predicados = new ArrayList<>();
 
-            // JOIN obligatorio para búsqueda global y filtros relacionales
+            // JOIN necesario para filtros sobre cliente.
             Join<Venta, Cliente> clienteJoin = root.join("cliente", JoinType.LEFT);
 
-            // Evitar duplicados por JOINs de colecciones en COUNT query
+            // Evita duplicados en la consulta principal cuando existen subconsultas o joins.
             if (query.getResultType() != Long.class && query.getResultType() != long.class) {
                 query.distinct(true);
             }
 
-            // 1. Búsqueda global (q)
+            // 1. Búsqueda global.
             if (StringUtils.hasText(filtro.getQ())) {
-                String patron = "%" + filtro.getQ().toLowerCase() + "%";
-                Predicate porNombreCliente =
-                        cb.like(cb.lower(clienteJoin.get("nombreCompleto")), patron);
-                Predicate porRazonSocial =
-                        cb.like(cb.lower(clienteJoin.get("razonSocial")), patron);
-                // Búsqueda por comprobante (serie o correlativo) via subquery
+                String patron = "%" + filtro.getQ().trim().toLowerCase(Locale.ROOT) + "%";
+
+                Predicate porNombreCliente = cb.like(cb.lower(clienteJoin.get("nombreCompleto")), patron);
+
+                Predicate porRazonSocial = cb.like(cb.lower(clienteJoin.get("razonSocial")), patron);
+
                 Subquery<Integer> subComprobante = query.subquery(Integer.class);
                 Root<Comprobante> compRoot = subComprobante.from(Comprobante.class);
                 subComprobante.select(compRoot.get("venta").get("idVenta"))
@@ -56,18 +93,16 @@ public class VentaSpecification {
                                 cb.like(cb.lower(compRoot.get("serie")), patron),
                                 cb.like(cb.lower(compRoot.get("correlativo")), patron)
                         ));
-                Predicate porComprobante =
-                        root.get("idVenta").in(subComprobante);
-
+                Predicate porComprobante = root.get("idVenta").in(subComprobante);
                 predicados.add(cb.or(porNombreCliente, porRazonSocial, porComprobante));
             }
 
-            // 2. Filtro por cliente exacto
+            // 2. Filtro por cliente exacto.
             if (filtro.getClienteId() != null) {
                 predicados.add(cb.equal(clienteJoin.get("idCliente"), filtro.getClienteId()));
             }
 
-            // 3. Filtro por número visual de venta
+            // 3. Filtro por número visual de venta.
             if (StringUtils.hasText(filtro.getNumeroVenta())) {
                 Integer idExtraido = extraerIdDeNumeroVenta(filtro.getNumeroVenta().trim());
                 if (idExtraido != null) {
@@ -75,46 +110,56 @@ public class VentaSpecification {
                 }
             }
 
-            // 4. Filtro por tipo de comprobante
-            if (filtro.getTipoComprobante() != null) {
+            // 4. Filtro por tipo de comprobante.
+            TipoComprobante tipoComprobante = toTipoComprobante(filtro.getTipoComprobante());
+            if (tipoComprobante != null) {
                 Subquery<Integer> subTipoComp = query.subquery(Integer.class);
                 Root<Comprobante> compRoot = subTipoComp.from(Comprobante.class);
                 subTipoComp.select(compRoot.get("venta").get("idVenta"))
-                        .where(cb.equal(compRoot.get("tipoComprobante"), filtro.getTipoComprobante()));
+                        .where(cb.equal(compRoot.get("tipoComprobante"), tipoComprobante));
                 predicados.add(root.get("idVenta").in(subTipoComp));
             }
 
-            // 5. Filtro por estado de venta
-            if (filtro.getEstadoVenta() != null) {
-                predicados.add(
-                        cb.equal(root.get("estadoFisico"), filtro.getEstadoVenta()));
+            // 5. Filtro por estado de venta.
+            EstadoVenta estadoVenta = toEstadoVenta(filtro.getEstadoVenta());
+            if (estadoVenta != null) {
+                predicados.add(cb.equal(root.get("estadoVenta"), estadoVenta));
             }
 
-            // 6. Filtro por método de pago
+            // 6. Filtro por método de pago.
             if (filtro.getMetodoPagoId() != null) {
                 Subquery<Integer> subPago = query.subquery(Integer.class);
                 Root<Pago> pagoRoot = subPago.from(Pago.class);
                 subPago.select(pagoRoot.get("venta").get("idVenta"))
                         .where(
                                 cb.and(
-                                        cb.equal(pagoRoot.get("metodoPago").get("idMetodoPago"),
-                                                filtro.getMetodoPagoId()),
+                                        cb.equal(
+                                                pagoRoot.get("metodoPago").get("idMetodoPago"),
+                                                filtro.getMetodoPagoId()
+                                        ),
                                         cb.equal(pagoRoot.get("estadoLogico"), 1)
                                 )
                         );
                 predicados.add(root.get("idVenta").in(subPago));
             }
 
-            // 7. Filtro por rango de fechas
+            // 7. Rango de fechas.
             if (filtro.getFechaInicio() != null) {
                 predicados.add(
                         cb.greaterThanOrEqualTo(
-                                root.get("fechaHoraVenta"), filtro.getFechaInicio()));
+                                root.get("fechaHoraVenta"),
+                                filtro.getFechaInicio()
+                        )
+                );
             }
+
             if (filtro.getFechaFin() != null) {
                 predicados.add(
                         cb.lessThanOrEqualTo(
-                                root.get("fechaHoraVenta"), filtro.getFechaFin()));
+                                root.get("fechaHoraVenta"),
+                                filtro.getFechaFin()
+                        )
+                );
             }
 
             return cb.and(predicados.toArray(new Predicate[0]));
@@ -122,9 +167,15 @@ public class VentaSpecification {
     }
 
     /**
-     * Extrae el id numérico del número visual de venta.
-     * Formato esperado: V-YYYY-NNNNNN
-     * Retorna null si el formato no coincide.
+     * Extrae el identificador técnico contenido en el número visual de venta.
+     *
+     * <p>
+     * Formato esperado: {@code V-YYYY-NNNNNN}. Si el formato no coincide o el valor
+     * numérico no puede ser interpretado, el método retorna {@code null}.
+     * </p>
+     *
+     * @param numeroVenta número visual ingresado por el usuario.
+     * @return identificador técnico de la venta o {@code null} si no es válido.
      */
     private static Integer extraerIdDeNumeroVenta(String numeroVenta) {
         String[] partes = numeroVenta.split("-");
@@ -135,6 +186,52 @@ public class VentaSpecification {
         try {
             return Integer.parseInt(partes[2]);
         } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Convierte un valor textual al enum {@link TipoComprobante}.
+     *
+     * <p>
+     * La conversión es tolerante a espacios y a diferencias de mayúsculas/minúsculas.
+     * Si el valor no corresponde a ningún enum válido, retorna {@code null}.
+     * </p>
+     *
+     * @param valor texto recibido desde el filtro.
+     * @return enum convertido o {@code null} si el valor no es válido.
+     */
+    private static TipoComprobante toTipoComprobante(String valor) {
+        if (!StringUtils.hasText(valor)) {
+            return null;
+        }
+
+        try {
+            return TipoComprobante.valueOf(valor.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Convierte un valor textual al enum {@link EstadoVenta}.
+     *
+     * <p>
+     * La conversión es tolerante a espacios y a diferencias de mayúsculas/minúsculas.
+     * Si el valor no corresponde a ningún enum válido, retorna {@code null}.
+     * </p>
+     *
+     * @param valor texto recibido desde el filtro.
+     * @return enum convertido o {@code null} si el valor no es válido.
+     */
+    private static EstadoVenta toEstadoVenta(String valor) {
+        if (!StringUtils.hasText(valor)) {
+            return null;
+        }
+
+        try {
+            return EstadoVenta.valueOf(valor.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
             return null;
         }
     }
