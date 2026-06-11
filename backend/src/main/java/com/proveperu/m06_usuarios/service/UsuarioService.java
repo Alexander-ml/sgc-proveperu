@@ -1,4 +1,5 @@
 package com.proveperu.m06_usuarios.service;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,10 +16,10 @@ import com.proveperu.m06_usuarios.entity.Usuario;
 import com.proveperu.m06_usuarios.enums.EstadoUsuario;
 import com.proveperu.m06_usuarios.repository.RolRepository;
 import com.proveperu.m06_usuarios.repository.UsuarioRepository;
+import com.proveperu.shared.enums.EstadoLogico;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 /**
  * Servicio encargado de gestionar las operaciones
  * relacionadas con usuarios y roles.
@@ -109,12 +110,14 @@ log.info(
         "Creando usuario con login {}",
         request.getUsuarioLogin()
 );
-        Rol rol = rolRepository.findById(request.getIdRol())
-                .orElseThrow(() ->{
+        Rol rol = rolRepository  .findByNombreRolIgnoreCase(
+                request.getNombreRol().trim()
+        )
+        .orElseThrow(() -> {
 
             log.warn(
-                    "No se encontró el rol con id {} para crear usuario",
-                    request.getIdRol()
+                    "No se encontró el rol con nombre {} para crear usuario",
+                    request.getNombreRol()
             );
 
             return new RuntimeException(
@@ -122,18 +125,20 @@ log.info(
             );
         });
 
-        Usuario usuario = Usuario.builder()
-                .nombreCompleto(request.getNombreCompleto())
-                .usuarioLogin(request.getUsuarioLogin())
-                .passwordHash(
-                        passwordEncoder.encode(request.getPassword())
-                )
-                .rol(rol)
-                .estadoFisico(EstadoUsuario.ACTIVO)
-                
-                .build();
+       Usuario usuario = Usuario.builder()
+        .nombreCompleto(request.getNombreCompleto())
+        .usuarioLogin(request.getUsuarioLogin())
+        .passwordHash(
+                passwordEncoder.encode(request.getPassword())
+        )
+        .rol(rol)
+        .estadoFisico(EstadoUsuario.ACTIVO)
+        .build();
 
-        usuarioRepository.save(usuario);
+usuario.setEstadoLogico(EstadoLogico.ACTIVO);
+usuario.setFechaHoraCreacion(LocalDateTime.now());
+
+usuarioRepository.save(usuario);
         log.info(
         "Usuario {} creado correctamente",
         request.getUsuarioLogin()
