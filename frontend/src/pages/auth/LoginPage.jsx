@@ -23,7 +23,7 @@ const LoginPage = () => {
 
       console.log('Login correcto:', respuesta);
 
-      navigate('/home');
+      window.location.replace('/home');
     } catch (error) {
       console.error('Error en login:', error);
 
@@ -37,6 +37,7 @@ const LoginPage = () => {
   };
 
   return (
+  <div className="login-page">
     <div className="login-container">
       <div className="login-card">
         <h1>SGC ProvePeru</h1>
@@ -73,7 +74,8 @@ const LoginPage = () => {
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default LoginPage;
