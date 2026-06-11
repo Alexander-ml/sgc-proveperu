@@ -5,6 +5,8 @@ import com.proveperu.m05_gestion_clientes.entity.Cliente;
 import com.proveperu.m06_usuarios.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -66,7 +68,7 @@ public class Venta {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoVenta estadoFisico;
+    private EstadoVenta estadoVenta;
 
     /**
      * Detalles asociados a la venta.
@@ -118,5 +120,6 @@ public class Venta {
     private List<Pago> pagos = new ArrayList<>();
 
     @OneToOne(mappedBy = "venta", fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Comprobante comprobante;
 }

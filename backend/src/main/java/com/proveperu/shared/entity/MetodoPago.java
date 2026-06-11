@@ -56,7 +56,7 @@ public class MetodoPago extends BaseAuditEntity{
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoActivoInactivo estadoFisico;
+    private EstadoActivoInactivo estadoMetodoPago;
 
     /**
      * Pagos de compra realizados utilizando este método.
