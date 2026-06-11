@@ -1,24 +1,17 @@
 package com.proveperu.m01_ventas.service;
 
-public class VentaService {
+import com.proveperu.m01_ventas.dto.request.VentaFiltroRequest;
+import com.proveperu.m01_ventas.dto.response.VentaResumenResponseDTO;
+import org.springframework.data.domain.Page;
 
-    public void obtenerVentaPorId() {
 
-    }
+public interface VentaService {
 
-    public void buscarVentas() {
-
-    }
-
-    public void buscarVentasPorCliente() {
-
-    }
-
-    public void buscarVentasPorUsuario(){
-
-    }
-
-    public void buscarVentasPorRangoFechas(){
-
-    }
+    /**
+     * Retorna una página de ventas resumidas que cumplen con los filtros indicados.
+     *
+     * @param filtro parámetros de búsqueda, filtrado, paginación y ordenamiento
+     * @return página de ventas resumidas lista para serializar al frontend
+     */
+    Page<VentaResumenResponseDTO> listarVentas(VentaFiltroRequest filtro);
 }
