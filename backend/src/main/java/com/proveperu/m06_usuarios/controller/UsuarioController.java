@@ -1,6 +1,7 @@
 package com.proveperu.m06_usuarios.controller;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,6 +43,7 @@ import com.proveperu.m06_usuarios.dto.response.UsuarioDetalleResponse;
         name = "Usuarios",
         description = "Gestión de usuarios, roles y permisos"
 )
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
@@ -76,137 +78,137 @@ public class UsuarioController {
         );
     }
 
-/**
- * Obtiene la lista de usuarios registrados
- * en el sistema.
- *
- * @param nombre filtro opcional por nombre.
- * @return listado de usuarios.
- */
-@Operation(
-        summary = "Listar usuarios",
-        description = "Obtiene la lista de usuarios registrados en el sistema."
-)
-@GetMapping
-public ResponseEntity<ApiResponse<List<UsuarioListadoResponse>>> listarUsuarios(
-        @RequestParam(required = false) String nombre
-) {
+    /**
+     * Obtiene la lista de usuarios registrados
+     * en el sistema.
+     *
+     * @param nombre filtro opcional por nombre.
+     * @return listado de usuarios.
+     */
+    @Operation(
+            summary = "Listar usuarios",
+            description = "Obtiene la lista de usuarios registrados en el sistema."
+    )
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UsuarioListadoResponse>>> listarUsuarios(
+            @RequestParam(required = false) String nombre
+    ) {
 
-    List<UsuarioListadoResponse> response =
-            usuarioService.listarUsuarios(nombre);
+        List<UsuarioListadoResponse> response =
+                usuarioService.listarUsuarios(nombre);
 
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                response,
-                    "Usuarios obtenidos correctamente"
-            )
-    );
-}
-
-
-@Operation(
-        summary = "Crear usuario",
-        description = "Registra un nuevo usuario en el sistema."
-)
-@PostMapping
-public ResponseEntity<ApiResponse<String>> crearUsuario(
-        @Valid @RequestBody CrearUsuarioRequest request
-) {
-
-    usuarioService.crearUsuario(request);
-
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                null,    
-                "Usuario creado correctamente"
-                    
-            )
-    );
-}
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    response,
+                        "Usuarios obtenidos correctamente"
+                )
+        );
+    }
 
 
-@Operation(
-        summary = "Editar usuario",
-        description = "Actualiza la información de un usuario existente."
-)
-@PutMapping("/{id}")
-public ResponseEntity<ApiResponse<String>> editarUsuario(
-        @PathVariable Integer id,
-        @Valid @RequestBody EditarUsuarioRequest request
-) {
+    @Operation(
+            summary = "Crear usuario",
+            description = "Registra un nuevo usuario en el sistema."
+    )
+    @PostMapping
+    public ResponseEntity<ApiResponse<String>> crearUsuario(
+            @Valid @RequestBody CrearUsuarioRequest request
+    ) {
 
-    usuarioService.editarUsuario(id, request);
+        usuarioService.crearUsuario(request);
 
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                null,
-                "Usuario actualizado correctamente"
-            )
-    );
-}
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    null,
+                    "Usuario creado correctamente"
 
-
-@Operation(
-        summary = "Obtener usuario por ID",
-        description = "Obtiene la información completa de un usuario."
-)
-@GetMapping("/{id}")
-public ResponseEntity<ApiResponse<UsuarioDetalleResponse>>
-obtenerUsuarioPorId(
-        @PathVariable Integer id
-) {
-
-    UsuarioDetalleResponse response =
-            usuarioService.obtenerUsuarioPorId(id);
-
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                response,    
-                "Usuario obtenido correctamente"
-                    
-            )
-    );
-}
+                )
+        );
+    }
 
 
-@Operation(
-        summary = "Suspender usuario",
-        description = "Cambia el estado del usuario a SUSPENDIDO."
-)
-@PatchMapping("/{id}/suspender")
-public ResponseEntity<ApiResponse<Void>>
-suspenderUsuario(
-        @PathVariable Integer id
-) {
+    @Operation(
+            summary = "Editar usuario",
+            description = "Actualiza la información de un usuario existente."
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> editarUsuario(
+            @PathVariable Integer id,
+            @Valid @RequestBody EditarUsuarioRequest request
+    ) {
 
-    usuarioService.suspenderUsuario(id);
+        usuarioService.editarUsuario(id, request);
 
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                null,
-                    "Usuario suspendido correctamente"
-            )
-    );
-}
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    null,
+                    "Usuario actualizado correctamente"
+                )
+        );
+    }
 
 
-@Operation(
-        summary = "Activar usuario",
-        description = "Cambia el estado del usuario a ACTIVO."
-)
-@PatchMapping("/{id}/activar")
-public ResponseEntity<ApiResponse<Void>>
-activarUsuario(
-        @PathVariable Integer id
-) {
+    @Operation(
+            summary = "Obtener usuario por ID",
+            description = "Obtiene la información completa de un usuario."
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UsuarioDetalleResponse>>
+    obtenerUsuarioPorId(
+            @PathVariable Integer id
+    ) {
 
-    usuarioService.activarUsuario(id);
+        UsuarioDetalleResponse response =
+                usuarioService.obtenerUsuarioPorId(id);
 
-    return ResponseEntity.ok(
-            ApiResponse.success(
-                null,    
-                "Usuario activado correctamente"                    
-            )
-    );
-}
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    response,
+                    "Usuario obtenido correctamente"
+
+                )
+        );
+    }
+
+
+    @Operation(
+            summary = "Suspender usuario",
+            description = "Cambia el estado del usuario a SUSPENDIDO."
+    )
+    @PatchMapping("/{id}/suspender")
+    public ResponseEntity<ApiResponse<Void>>
+    suspenderUsuario(
+            @PathVariable Integer id
+    ) {
+
+        usuarioService.suspenderUsuario(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    null,
+                        "Usuario suspendido correctamente"
+                )
+        );
+    }
+
+
+    @Operation(
+            summary = "Activar usuario",
+            description = "Cambia el estado del usuario a ACTIVO."
+    )
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<ApiResponse<Void>>
+    activarUsuario(
+            @PathVariable Integer id
+    ) {
+
+        usuarioService.activarUsuario(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                    null,
+                    "Usuario activado correctamente"
+                )
+        );
+    }
 }
