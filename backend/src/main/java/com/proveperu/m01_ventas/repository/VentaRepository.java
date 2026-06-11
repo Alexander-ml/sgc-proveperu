@@ -28,34 +28,25 @@ import java.util.Optional;
 public interface VentaRepository extends JpaRepository<Venta, Integer>, JpaSpecificationExecutor<Venta> {
 
     /**
-     * Recupera una venta junto con sus relaciones principales para la vista resumen.
+     * Recupera una venta con sus relaciones completas para la vista de detalle.
      *
      * <p>
-     * Esta consulta carga en una sola operación:
-     * </p>
-     * <ul>
-     *     <li>El cliente asociado.</li>
-     *     <li>El usuario vendedor.</li>
-     *     <li>El rol del usuario vendedor.</li>
-     *     <li>El comprobante emitido, si existe.</li>
-     * </ul>
-     *
-     * <p>
-     * Se utiliza principalmente para evitar el problema N+1 al consultar
-     * el detalle individual de una venta o al construir un resumen funcional
-     * con sus relaciones ya resueltas.
+     * Carga en una sola operación:
+     * cliente, usuario vendedor, rol del vendedor y comprobante.
+     * Los detalles y pagos se cargan en consultas separadas para
+     * evitar productos cartesianos.
      * </p>
      *
-     * @param idVenta identificador técnico de la venta a consultar.
+     * @param idVenta identificador técnico de la venta.
      * @return venta con relaciones cargadas, si existe.
      */
     @Query("""
-            SELECT v FROM Venta v
-            LEFT JOIN FETCH v.cliente c
-            LEFT JOIN FETCH v.usuario u
-            LEFT JOIN FETCH u.rol r
-            LEFT JOIN FETCH v.comprobante co
-            WHERE v.idVenta = :idVenta
-            """)
-    Optional<Venta> findByIdWithRelaciones(@Param("idVenta") Integer idVenta);
+        SELECT v FROM Venta v
+        LEFT JOIN FETCH v.cliente c
+        LEFT JOIN FETCH v.usuario u
+        LEFT JOIN FETCH u.rol r
+        LEFT JOIN FETCH v.comprobante co
+        WHERE v.idVenta = :idVenta
+        """)
+    Optional<Venta> findDetalleCompletoById(@Param("idVenta") Integer idVenta);
 }

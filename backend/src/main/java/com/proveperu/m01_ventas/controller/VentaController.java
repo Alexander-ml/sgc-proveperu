@@ -167,7 +167,7 @@ public class VentaController {
                     name = "direction",
                     description = "Dirección del ordenamiento.",
                     example = "DESC",
-                    schema = @Schema(allowableValues = {"ASC", "DES"})
+                    schema = @Schema(allowableValues = {"ASC", "DESC"})
             )
     })
     public ResponseEntity<ApiResponse<Page<VentaResumenResponseDTO>>> listarVentas(
