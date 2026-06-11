@@ -168,18 +168,20 @@ log.info(
         });
 
         Rol rol = rolRepository
-                .findById(request.getIdRol())
-                .orElseThrow(() ->{
+               .findByNombreRolIgnoreCase(
+                request.getNombreRol().trim()
+        )
+        .orElseThrow(() -> {
 
             log.warn(
-                    "No se encontró el rol con id {} para editar usuario",
-                    request.getIdRol()
+                    "No se encontró el rol con nombre {} para editar usuario",
+                    request.getNombreRol()
             );
 
             return new RuntimeException(
                     "Rol no encontrado"
             );
-        } );
+        });
 
         usuario.setNombreCompleto(
                 request.getNombreCompleto()
@@ -196,7 +198,7 @@ log.info(
                         request.getEstado().toUpperCase()
                 )
         );
-
+usuario.setFechaHoraActualizacion(LocalDateTime.now());
         usuarioRepository.save(usuario);
         log.info(
         "Usuario {} actualizado correctamente",
