@@ -5,6 +5,7 @@ import com.proveperu.m01_ventas.dto.response.VentaResumenResponseDTO;
 import com.proveperu.m01_ventas.service.VentaService;
 
 import com.proveperu.shared.dto.response.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 @RestController
+@SecurityRequirement(name = "bearerAuth")
 @RequestMapping("/api/ventas")
 @RequiredArgsConstructor
 public class VentaController {
