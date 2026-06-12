@@ -32,7 +32,7 @@ public class Comprobante {
     /**
      * Venta asociada al comprobante.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_venta", nullable = false)
     private Venta venta;
 
@@ -66,5 +66,5 @@ public class Comprobante {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoComprobante estadoFisico;
+    private EstadoComprobante estadoComprobante;
 }

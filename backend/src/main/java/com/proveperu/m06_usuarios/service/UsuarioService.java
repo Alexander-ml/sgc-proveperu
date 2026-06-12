@@ -57,12 +57,12 @@ public class UsuarioService {
         Long totalUsuarios = usuarioRepository.count();
 
         Long usuariosActivos =
-                usuarioRepository.countByEstadoFisico(
+                usuarioRepository.countByEstadoUsuario(
                         EstadoUsuario.ACTIVO
                 );
 
         Long usuariosSuspendidos =
-                usuarioRepository.countByEstadoFisico(
+                usuarioRepository.countByEstadoUsuario(
                         EstadoUsuario.SUSPENDIDO
                 );
 
@@ -100,13 +100,32 @@ public class UsuarioService {
                         .nombreCompleto(usuario.getNombreCompleto())
                         .usuarioLogin(usuario.getUsuarioLogin())
                         .rol(usuario.getRol().getNombreRol())
-                        .estado(usuario.getEstadoFisico().name())
+                        .estado(usuario.getEstadoUsuario().name())
                         .build())
                 .collect(Collectors.toList());
     }
 
     public void crearUsuario(CrearUsuarioRequest request) {
-log.info(
+// <<<<<<< develop
+//
+//        Rol rol = rolRepository.findById(request.getIdRol())
+//                .orElseThrow(() ->
+//                        new RuntimeException("Rol no encontrado")
+//                );
+//
+//        Usuario usuario = Usuario.builder()
+//                .nombreCompleto(request.getNombreCompleto())
+//                .usuarioLogin(request.getUsuarioLogin())
+//                .passwordHash(
+//                        passwordEncoder.encode(request.getPassword())
+//                )
+//                .rol(rol)
+//                .estadoUsuario(EstadoUsuario.ACTIVO)
+//                .build();
+//
+//        usuarioRepository.save(usuario);
+// =======
+// log.info(
         "Creando usuario con login {}",
         request.getUsuarioLogin()
 );
@@ -132,7 +151,7 @@ log.info(
                 passwordEncoder.encode(request.getPassword())
         )
         .rol(rol)
-        .estadoFisico(EstadoUsuario.ACTIVO)
+        .estadoUsuario(EstadoUsuario.ACTIVO)
         .build();
 
 usuario.setEstadoLogico(EstadoLogico.ACTIVO);
@@ -140,9 +159,10 @@ usuario.setFechaHoraCreacion(LocalDateTime.now());
 
 usuarioRepository.save(usuario);
         log.info(
-        "Usuario {} creado correctamente",
-        request.getUsuarioLogin()
-);
+//        "Usuario {} creado correctamente",
+//         request.getUsuarioLogin()
+// );
+// >>>>>>> feature/usuarios-roles
     }
     
     public void editarUsuario(
@@ -193,7 +213,7 @@ log.info(
 
         usuario.setRol(rol);
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.valueOf(
                         request.getEstado().toUpperCase()
                 )
@@ -229,7 +249,7 @@ log.info(
                 .usuarioLogin(usuario.getUsuarioLogin())
                 .idRol(usuario.getRol().getIdRol())
                 .rol(usuario.getRol().getNombreRol())
-                .estado(usuario.getEstadoFisico().name())
+                .estado(usuario.getEstadoUsuario().name())
                 .build();
     }
     public void suspenderUsuario(Integer idUsuario) {
@@ -251,7 +271,7 @@ log.info(
             );
         } );
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.SUSPENDIDO
         );
 
@@ -280,7 +300,7 @@ log.info(
             );
         });
 
-        usuario.setEstadoFisico(
+        usuario.setEstadoUsuario(
                 EstadoUsuario.ACTIVO
         );
 

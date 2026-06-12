@@ -82,5 +82,5 @@ public class Cliente extends BaseAuditEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoActivoInactivo estadoFisico;
+    private EstadoActivoInactivo estadoCliente;
 }

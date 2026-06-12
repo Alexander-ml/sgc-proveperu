@@ -1121,8 +1121,7 @@ INSERT INTO comprobante (id_venta, tipo_comprobante, serie, correlativo, fecha_e
 (41, 'NOTA','NC01','00000003','2025-02-17 10:36:00','EMITIDO'),
 (57, 'NOTA','NC01','00000004','2025-03-18 11:06:00','EMITIDO'),
 (69, 'NOTA','NC01','00000005','2025-04-14 09:06:00','EMITIDO'),
-(72, 'NOTA','NC01','00000006','2025-04-17 09:36:00','ANULADO'),
-(89, 'NOTA','NC01','00000007','2025-06-09 09:06:00','ANULADO');
+(72, 'NOTA','NC01','00000006','2025-04-17 09:36:00','ANULADO');
 
 -- ============================================================
 -- MOVIMIENTOS DE INVENTARIO — EGRESO por ventas (muestra representativa)

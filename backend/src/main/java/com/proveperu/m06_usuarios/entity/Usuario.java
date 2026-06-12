@@ -67,7 +67,7 @@ public class Usuario  extends BaseAuditEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_fisico", nullable = false, length = 20)
-    private EstadoUsuario estadoFisico;
+    private EstadoUsuario estadoUsuario;
 
     /**
      * Usuario que creó el registro.

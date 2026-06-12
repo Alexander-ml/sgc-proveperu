@@ -15,7 +15,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     @EntityGraph(attributePaths = {"rol"})
     Optional<Usuario> findByUsuarioLogin(String usuarioLogin);
-    long countByEstadoFisico(EstadoUsuario estadoFisico);
+    long countByEstadoUsuario(EstadoUsuario estadoUsuario);
     @EntityGraph(attributePaths = {"rol"})
     List<Usuario> findByNombreCompletoContainingIgnoreCase(String nombreCompleto);
 }
