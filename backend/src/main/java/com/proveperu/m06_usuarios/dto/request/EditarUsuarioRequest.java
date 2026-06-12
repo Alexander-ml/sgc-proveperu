@@ -1,23 +1,22 @@
 package com.proveperu.m06_usuarios.dto.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class EditarUsuarioRequest {
-        @NotBlank(message = "El nombre completo es obligatorio")
+     @NotBlank(message = "El nombre es obligatorio")
     private String nombreCompleto;
 
     @Email(message = "Correo inválido")
     @NotBlank(message = "El correo es obligatorio")
     private String usuarioLogin;
 
-    @NotNull(message = "Debe seleccionar un rol")
-    private Integer idRol;
+    @NotBlank(message = "El rol es obligatorio")
+    private String nombreRol;
 
-    @NotBlank(message = "Debe indicar el estado")
+    @NotBlank(message = "El estado es obligatorio")
     private String estado;
 }

@@ -1254,3 +1254,4 @@ INSERT INTO movimiento_caja (id_caja, id_tipo_movimiento_caja, id_usuario_regist
 (1,2,12,NULL,NULL, 190.00,'Pago útiles de escritorio','2025-06-03 16:00:00','REGISTRADO'),
 -- Movimiento ANULADO
 (1,1,12,11,1, 780.00,'Cobro anulado venta V-0011','2024-12-08 10:36:00','ANULADO');
+

@@ -1,19 +1,21 @@
 package com.proveperu.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Servicio responsable de la generación, validación y extracción de información
@@ -39,6 +41,7 @@ import java.util.function.Function;
  * de mantener sesiones activas en el servidor.
  * </p>
  */
+@Slf4j
 @Service
 public class JwtService {
 
@@ -70,6 +73,12 @@ public class JwtService {
      *         en solicitudes autenticadas.
      */
     public String generateToken(UserDetails userDetails, String rol) {
+         log.info(
+            "Generando JWT para usuario {} con rol {}",
+            userDetails.getUsername(),
+            rol
+    );
+
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", rol);
         return Jwts.builder()
@@ -93,6 +102,8 @@ public class JwtService {
      * @return nombre de usuario asociado al token.
      */
     public String extractUsername(String token) {
+         log.info("Extrayendo username desde JWT");
+
         return extractClaim(token, Claims::getSubject);
     }
 
@@ -123,6 +134,10 @@ public class JwtService {
      *         {@code false} en caso contrario.
      */
     public boolean isTokenValid(String token, UserDetails userDetails) {
+          log.info(
+            "Validando token para usuario {}",
+            userDetails.getUsername()
+    );
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }

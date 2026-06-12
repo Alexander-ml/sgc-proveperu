@@ -1,10 +1,9 @@
 package com.proveperu.security;
 
 
-import com.proveperu.m06_usuarios.entity.Usuario;
-import com.proveperu.m06_usuarios.enums.EstadoUsuario;
-import com.proveperu.m06_usuarios.repository.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.Collection;
+import java.util.List;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -13,8 +12,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.List;
+import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.enums.EstadoUsuario;
+import com.proveperu.m06_usuarios.repository.UsuarioRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementación personalizada de {@link UserDetailsService} responsable de
@@ -38,6 +41,7 @@ import java.util.List;
  *     <li>Resolver las autoridades y roles asociados al usuario.</li>
  * </ul>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -70,20 +74,38 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username)
             throws UsernameNotFoundException {
-
+log.info(
+        "Buscando usuario para autenticación: {}",
+        username
+);
         Usuario usuario = usuarioRepository
                 .findByUsuarioLogin(username)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "Usuario no encontrado: " + username
                         ));
+// <<<<<<< develop
 
         if (usuario.getEstadoUsuario() != EstadoUsuario.ACTIVO) {
+// =======
+log.info(
+        "Usuario encontrado: {}",
+        usuario.getUsuarioLogin()
+);
+        if (usuario.getEstadoFisico() != EstadoUsuario.ACTIVO) {
+                log.warn(
+            "Intento de acceso con usuario suspendido: {}",
+            username
+    );
+// >>>>>>> feature/usuarios-roles
             throw new UsernameNotFoundException(
                     "Usuario suspendido"
             );
         }
-
+log.info(
+        "UserDetails construido para usuario: {}",
+        username
+);
         return User.builder()
                 .username(usuario.getUsuarioLogin())
                 .password(usuario.getPasswordHash())
