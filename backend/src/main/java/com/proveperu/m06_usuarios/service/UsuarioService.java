@@ -106,26 +106,7 @@ public class UsuarioService {
     }
 
     public void crearUsuario(CrearUsuarioRequest request) {
-// <<<<<<< develop
-//
-//        Rol rol = rolRepository.findById(request.getIdRol())
-//                .orElseThrow(() ->
-//                        new RuntimeException("Rol no encontrado")
-//                );
-//
-//        Usuario usuario = Usuario.builder()
-//                .nombreCompleto(request.getNombreCompleto())
-//                .usuarioLogin(request.getUsuarioLogin())
-//                .passwordHash(
-//                        passwordEncoder.encode(request.getPassword())
-//                )
-//                .rol(rol)
-//                .estadoUsuario(EstadoUsuario.ACTIVO)
-//                .build();
-//
-//        usuarioRepository.save(usuario);
-// =======
-// log.info(
+ log.info(
         "Creando usuario con login {}",
         request.getUsuarioLogin()
 );
@@ -159,10 +140,9 @@ usuario.setFechaHoraCreacion(LocalDateTime.now());
 
 usuarioRepository.save(usuario);
         log.info(
-//        "Usuario {} creado correctamente",
-//         request.getUsuarioLogin()
-// );
-// >>>>>>> feature/usuarios-roles
+        "Usuario {} creado correctamente",
+         request.getUsuarioLogin()
+ );
     }
     
     public void editarUsuario(

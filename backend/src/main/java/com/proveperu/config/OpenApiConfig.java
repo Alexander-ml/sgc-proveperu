@@ -9,11 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
 @Configuration
-@OpenAPIDefinition(
-        security = {
-                @SecurityRequirement(name = "bearerAuth")
-        }
-)
+@OpenAPIDefinition
 @SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,
