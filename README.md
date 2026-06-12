@@ -24,7 +24,7 @@ Desarrollado para Inversiones ProvePeru S.R.L., distribuidora de insumos para mu
 
 - Docker Desktop instalado y corriendo
 - Git instalado
-- pgAdmin 4 para administrar la base de datos visualmente (Opcional) 
+- Revisar `.env.example` duplicar archivo y renombrar como `.env` 
 
 ## Configuración Local
 
@@ -53,7 +53,7 @@ Editar el archivo .env con los valores correctos para el entorno local.
 
 ## Estructura del Proyecto
 
-Visualizar en `ARQUITECTURA.md` para la documentación completa
+Visualizar en `general.md` para la documentación completa
 
 ## Ramas de Trabajo
 
