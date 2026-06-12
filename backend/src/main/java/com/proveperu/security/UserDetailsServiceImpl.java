@@ -84,20 +84,15 @@ log.info(
                         new UsernameNotFoundException(
                                 "Usuario no encontrado: " + username
                         ));
-// <<<<<<< develop
-
-        if (usuario.getEstadoUsuario() != EstadoUsuario.ACTIVO) {
-// =======
 log.info(
         "Usuario encontrado: {}",
         usuario.getUsuarioLogin()
 );
-        if (usuario.getEstadoFisico() != EstadoUsuario.ACTIVO) {
+        if (usuario.getEstadoUsuario() != EstadoUsuario.ACTIVO) {
                 log.warn(
             "Intento de acceso con usuario suspendido: {}",
             username
     );
-// >>>>>>> feature/usuarios-roles
             throw new UsernameNotFoundException(
                     "Usuario suspendido"
             );
