@@ -16,6 +16,7 @@ import com.proveperu.m06_usuarios.service.RolService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
         description = "Gestión de roles y permisos"
 )
 @RestController
+@SecurityRequirement(name = "bearerAuth")
 @RequestMapping("/api/roles")
 @RequiredArgsConstructor
 public class RolController {

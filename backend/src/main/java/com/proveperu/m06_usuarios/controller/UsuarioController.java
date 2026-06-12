@@ -1,33 +1,31 @@
 package com.proveperu.m06_usuarios.controller;
 import java.util.List;
 
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proveperu.m06_usuarios.dto.request.CambiarPasswordRequest;
+import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
+import com.proveperu.m06_usuarios.dto.request.EditarUsuarioRequest;
 import com.proveperu.m06_usuarios.dto.response.UsuarioDashboardResponse;
+import com.proveperu.m06_usuarios.dto.response.UsuarioDetalleResponse;
 import com.proveperu.m06_usuarios.dto.response.UsuarioListadoResponse;
 import com.proveperu.m06_usuarios.service.UsuarioService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-
-import com.proveperu.m06_usuarios.dto.request.EditarUsuarioRequest;
-import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
-
-import org.springframework.web.bind.annotation.PatchMapping;
-import com.proveperu.m06_usuarios.dto.response.UsuarioDetalleResponse;
+import lombok.RequiredArgsConstructor;
 /**
  * Controlador REST encargado de gestionar las operaciones
  * relacionadas con usuarios y roles dentro del sistema.
@@ -211,4 +209,38 @@ public class UsuarioController {
                 )
         );
     }
+/**
+ * Cambia la contraseña de un usuario existente.
+ *
+ * <p>
+ * Este endpoint permite actualizar la contraseña de un usuario
+ * identificado por su ID. La nueva contraseña se recibe mediante
+ * un DTO, se valida y se envía al servicio para ser encriptada
+ * antes de almacenarse en la base de datos.
+ * </p>
+ *
+ * @param id identificador del usuario.
+ * @param request datos que contienen la nueva contraseña.
+ * @return respuesta indicando que la contraseña fue actualizada correctamente.
+ */
+    @Operation(
+        summary = "Cambiar contraseña de usuario",
+        description = "Actualiza la contraseña de un usuario existente."
+)
+@PatchMapping("/{id}/password")
+public ResponseEntity<ApiResponse<Void>>
+cambiarPassword(
+        @PathVariable Integer id,
+        @Valid @RequestBody CambiarPasswordRequest request
+) {
+
+    usuarioService.cambiarPassword(id, request);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    null,
+                    "Contraseña actualizada correctamente"
+            )
+    );
+}
 }
