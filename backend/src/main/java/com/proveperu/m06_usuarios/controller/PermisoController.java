@@ -11,6 +11,7 @@ import com.proveperu.m06_usuarios.service.PermisoService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 )
 @RestController
 @RequestMapping("/api/permisos")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class PermisoController {
        private final PermisoService permisoService;

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.proveperu.m06_usuarios.dto.request.CambiarPasswordRequest;
 import com.proveperu.m06_usuarios.dto.request.CrearUsuarioRequest;
 import com.proveperu.m06_usuarios.dto.request.EditarUsuarioRequest;
 import com.proveperu.m06_usuarios.dto.response.UsuarioDashboardResponse;
@@ -290,4 +291,53 @@ log.info(
         idUsuario
 );
     } 
+/**
+ * Cambia la contraseña de un usuario existente.
+ *
+ * <p>
+ * Busca al usuario por su identificador, encripta la nueva contraseña
+ * mediante PasswordEncoder y actualiza el hash de contraseña en la base
+ * de datos. Además, registra la fecha y hora de actualización.
+ * </p>
+ *
+ * @param idUsuario identificador del usuario.
+ * @param request DTO con la nueva contraseña.
+ */
+    public void cambiarPassword(
+        Integer idUsuario,
+        CambiarPasswordRequest request
+) {
+
+    log.info(
+            "Cambiando contraseña del usuario con id {}",
+            idUsuario
+    );
+
+    Usuario usuario = usuarioRepository
+            .findById(idUsuario)
+            .orElseThrow(() -> {
+
+                log.warn(
+                        "No se encontró el usuario con id {} para cambiar contraseña",
+                        idUsuario
+                );
+
+                return new RuntimeException(
+                        "Usuario no encontrado"
+                );
+            });
+
+    usuario.setPasswordHash(
+            passwordEncoder.encode(request.getNuevaPassword())
+    );
+
+    usuario.setFechaHoraActualizacion(LocalDateTime.now());
+
+    usuarioRepository.save(usuario);
+
+    log.info(
+            "Contraseña actualizada correctamente para el usuario {}",
+            idUsuario
+    );
+}
 }
