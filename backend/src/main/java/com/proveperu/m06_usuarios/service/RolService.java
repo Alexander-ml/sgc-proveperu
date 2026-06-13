@@ -1,8 +1,10 @@
 package com.proveperu.m06_usuarios.service;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.proveperu.m06_usuarios.dto.request.ActualizarPermisosRolRequest;
 import com.proveperu.m06_usuarios.dto.response.RolDetalleResponse;
@@ -80,6 +82,7 @@ private final RolPermisoRepository rolPermisoRepository;
             .permisos(permisos)
             .build();
 }
+@Transactional
 public void actualizarPermisosRol(
         Integer idRol,
         ActualizarPermisosRolRequest request
@@ -125,7 +128,7 @@ public void actualizarPermisosRol(
                 .rol(rol)
                 .permiso(permiso)
                 .build();
-
+rolPermiso.setFechaHoraCreacion(LocalDateTime.now());
         rolPermisoRepository.save(rolPermiso);
     }
      log.info(

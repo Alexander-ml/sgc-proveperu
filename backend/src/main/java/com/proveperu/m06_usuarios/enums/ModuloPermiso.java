@@ -10,5 +10,6 @@
         CAJA,
         CLIENTES,
         PROCESOS_COMPARTIDOS,
-        USUARIOS
+        USUARIOS,
+        VENTAS
     }
