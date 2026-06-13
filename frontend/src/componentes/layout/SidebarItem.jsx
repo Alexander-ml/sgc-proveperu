@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom';
 
-const SidebarItem = ({ label, to }) => {
+const SidebarItem = ({ label, to, icon }) => {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `d-block px-3 py-2 rounded mb-2 text-decoration-none ${
+        `d-flex align-items-center gap-2 px-3 py-2 rounded mb-2 text-decoration-none ${
           isActive ? 'bg-primary text-white' : 'text-white'
         }`
       }
@@ -15,10 +15,10 @@ const SidebarItem = ({ label, to }) => {
         width: '100%',
         minHeight: '40px',
         lineHeight: '24px',
-        display: 'block',
       }}
     >
-      {label}
+      {icon && <i className={`bi ${icon}`}></i>}
+      <span>{label}</span>
     </NavLink>
   );
 };
