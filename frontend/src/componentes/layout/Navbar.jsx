@@ -1,37 +1,42 @@
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
-  const navigate = useNavigate();
   const { usuario, rol, logout } = useAuth();
 
-  const handleLogout = () => {
+  const cerrarSesion = () => {
     logout();
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
 
   return (
-    <header className="d-flex justify-content-between align-items-center mb-4">
+    <div className="bg-white rounded shadow-sm px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
       <div>
-        <h5 className="mb-0">Inicio</h5>
+        <span className="text-muted">
+          <i className="bi bi-house-door me-2"></i>
+          Inicio
+        </span>
       </div>
 
       <div className="d-flex align-items-center gap-3">
         <div className="text-end">
-          <strong className="d-block">
+          <div className="fw-bold">
+            <i className="bi bi-person-circle me-2"></i>
             {usuario?.nombreCompleto || 'Usuario'}
-          </strong>
-          <span className="text-muted">{rol || 'Administrador'}</span>
+          </div>
+
+          <small className="text-muted">{rol}</small>
         </div>
 
         <button
+          type="button"
           className="btn btn-outline-danger btn-sm"
-          onClick={handleLogout}
+          onClick={cerrarSesion}
         >
-          Cerrar sesión
+          <i className="bi bi-box-arrow-right me-1"></i>
+          Salir
         </button>
       </div>
-    </header>
+    </div>
   );
 };
 

@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/auth/LoginPage';
 import HomePage from '../pages/home/HomePage';
 import UsuariosRolesPage from '../pages/admin/UsuariosRolesPage';
+import RoleRoute from './RoleRoute';
+import VentasPage from '../pages/ventas/VentasPage';
 
 function AppRouter() {
   return (
@@ -14,15 +16,77 @@ function AppRouter() {
 
         <Route path="/home" element={<HomePage />} />
 
-        <Route path="/usuarios-roles" element={<UsuariosRolesPage />} />
+        <Route
+          path="/usuarios-roles"
+          element={
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <UsuariosRolesPage />
+            </RoleRoute>
+          }
+        />
 
-        <Route path="/ventas" element={<HomePage />} />
-        <Route path="/inventario" element={<HomePage />} />
-        <Route path="/compras" element={<HomePage />} />
-        <Route path="/caja" element={<HomePage />} />
-        <Route path="/reportes" element={<HomePage />} />
-        <Route path="/clientes" element={<HomePage />} />
-        <Route path="/historial-compras" element={<HomePage />} />
+        <Route
+          path="/ventas"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'VENDEDOR', 'CAJERO']}>
+              <VentasPage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/inventario"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'ALMACEN', 'COMPRAS']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/compras"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'COMPRAS', 'ALMACEN']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/caja"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'CAJERO']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/reportes"
+          element={
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/clientes"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'VENDEDOR']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/historial-compras"
+          element={
+            <RoleRoute allowedRoles={['ADMIN', 'VENDEDOR']}>
+              <HomePage />
+            </RoleRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

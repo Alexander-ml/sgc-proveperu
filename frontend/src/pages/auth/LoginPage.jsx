@@ -24,6 +24,7 @@ const LoginPage = () => {
       console.log('Login correcto:', respuesta);
 
       window.location.replace('/home');
+      
     } catch (error) {
       console.error('Error en login:', error);
 

@@ -1,0 +1,184 @@
+:root {
+  --color-primary: #155dfc;
+  --color-primary-dark: #0b3ea8;
+  --color-sidebar: #08224a;
+  --color-bg: #f4f7fb;
+  --color-card: #ffffff;
+  --color-border: #dbe3ef;
+  --color-text: #061b3a;
+  --color-muted: #6b7a90;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Tarjetas generales */
+.app-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(8, 34, 74, 0.06);
+}
+
+/* Tarjetas con hover */
+.app-card-hover {
+  transition: all 0.2s ease;
+}
+
+.app-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(8, 34, 74, 0.12);
+}
+
+/* Títulos */
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.page-subtitle {
+  color: var(--color-muted);
+  font-size: 15px;
+}
+
+/* Inputs */
+.app-input,
+.app-select {
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  min-height: 44px;
+}
+
+.app-input:focus,
+.app-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(21, 93, 252, 0.12);
+}
+
+/* Botones */
+.app-btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.app-btn-primary:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+/* Tabs tipo píldora */
+.app-tabs {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(8, 34, 74, 0.06);
+}
+
+.app-tab-btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.app-tab-btn.active {
+  background: #ffffff;
+  color: var(--color-primary);
+  box-shadow: 0 3px 10px rgba(8, 34, 74, 0.14);
+}
+
+/* Tablas */
+.app-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.app-table thead th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.app-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* Badges */
+.app-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Modal */
+.modal-content {
+  border-radius: 18px;
+  border: none;
+  box-shadow: 0 20px 60px rgba(8, 34, 74, 0.25);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--color-border);
+}
+
+/* Iconos dentro de botones */
+.btn i,
+.app-tab-btn i {
+  vertical-align: -1px;
+}
+
+/* Sidebar */
+.sidebar-brand {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.sidebar-section-title {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-role-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 22px;
+  }
+
+  .app-tabs {
+    border-radius: 16px;
+  }
+
+  .app-tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+}
