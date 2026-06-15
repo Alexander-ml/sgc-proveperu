@@ -9,7 +9,6 @@ export const listarUsuarios = async (nombre = '') => {
   const response = await axiosInstance.get('/usuarios', {
     params: nombre ? { nombre } : {},
   });
-
   return response.data;
 };
 
@@ -35,5 +34,12 @@ export const suspenderUsuario = async (id) => {
 
 export const activarUsuario = async (id) => {
   const response = await axiosInstance.patch(`/usuarios/${id}/activar`);
+  return response.data;
+};
+
+export const cambiarPasswordUsuario = async (id, nuevaPassword) => {
+  const response = await axiosInstance.patch(`/usuarios/${id}/password`, {
+    nuevaPassword,
+  });
   return response.data;
 };

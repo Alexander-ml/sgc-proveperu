@@ -11,9 +11,14 @@ import {
   obtenerUsuarioPorId,
   activarUsuario,
   suspenderUsuario,
+  cambiarPasswordUsuario,
 } from '../../services/usuarioService';
 
-import { listarRoles, obtenerRolPorId } from '../../services/rolService';
+import {
+  listarRoles,
+  obtenerRolPorId,
+  actualizarPermisosRol,
+} from '../../services/rolService';
 
 import { listarPermisos } from '../../services/permisoService';
 
@@ -236,6 +241,8 @@ const UsuariosRolesPage = () => {
   const [roles, setRoles] = useState([]);
   const [permisos, setPermisos] = useState([]);
   const [rolSeleccionado, setRolSeleccionado] = useState(null);
+  const [permisosRolSeleccionados, setPermisosRolSeleccionados] = useState([]);
+  const [guardandoPermisos, setGuardandoPermisos] = useState(false);
 
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
@@ -247,7 +254,7 @@ const UsuariosRolesPage = () => {
   const [nuevoUsuario, setNuevoUsuario] = useState({
     nombreCompleto: '',
     usuarioLogin: '',
-    idRol: 2,
+    nombreRol: 'VENDEDOR',
     password: '',
   });
 
@@ -255,7 +262,7 @@ const UsuariosRolesPage = () => {
     id: null,
     nombreCompleto: '',
     usuarioLogin: '',
-    idRol: 2,
+    nombreRol: 'VENDEDOR',
     estado: 'ACTIVO',
   });
 
@@ -353,11 +360,6 @@ const UsuariosRolesPage = () => {
     return `${partes[0][0] || ''}${partes[1][0] || ''}`.toUpperCase();
   };
 
-  const obtenerIdRolDesdeNombre = (rol) => {
-    const rolEncontrado = ROLES.find((item) => item.nombre === rol);
-    return rolEncontrado ? rolEncontrado.idRol : 2;
-  };
-
   const obtenerNombreRolVisible = (rol) => {
     if (!rol) return 'Sin rol';
 
@@ -370,10 +372,40 @@ const UsuariosRolesPage = () => {
     return rol;
   };
 
+  const obtenerClavePermiso = (permiso) => {
+    return `${permiso.modulo} - ${permiso.accion}`;
+  };
+
+  const obtenerIdsPermisosAsignados = (detalleRol, permisosDisponibles) => {
+    const permisosRol = detalleRol?.permisos || detalleRol?.listaPermisos || [];
+
+    return permisosDisponibles
+      .filter((permiso) =>
+        permisosRol.some((permisoRol) => {
+          if (typeof permisoRol === 'string') {
+            return permisoRol === obtenerClavePermiso(permiso);
+          }
+
+          return (
+            permisoRol.idPermiso === permiso.idPermiso ||
+            permisoRol.codigoPermiso === permiso.codigoPermiso ||
+            (permisoRol.modulo === permiso.modulo &&
+              permisoRol.accion === permiso.accion)
+          );
+        })
+      )
+      .map((permiso) => permiso.idPermiso);
+  };
+
   const seleccionarRol = async (idRol) => {
     try {
       const response = await obtenerRolPorId(idRol);
-      setRolSeleccionado(response.data);
+      const detalleRol = response.data;
+
+      setRolSeleccionado(detalleRol);
+      setPermisosRolSeleccionados(
+        obtenerIdsPermisosAsignados(detalleRol, permisos)
+      );
     } catch (error) {
       console.error('Error obteniendo detalle del rol:', error);
 
@@ -383,15 +415,58 @@ const UsuariosRolesPage = () => {
         ...rolLocal,
         permisos: [],
       });
+
+      setPermisosRolSeleccionados([]);
     }
   };
+
+  const cambiarSeleccionPermiso = (idPermiso) => {
+    setPermisosRolSeleccionados((permisosActuales) => {
+      if (permisosActuales.includes(idPermiso)) {
+        return permisosActuales.filter((id) => id !== idPermiso);
+      }
+
+      return [...permisosActuales, idPermiso];
+    });
+  };
+
+  const guardarPermisosRol = async () => {
+    if (!rolSeleccionado) return;
+
+    if (permisosRolSeleccionados.length === 0) {
+      alert('Debes seleccionar al menos un permiso.');
+      return;
+    }
+
+    try {
+      setGuardandoPermisos(true);
+
+      await actualizarPermisosRol(rolSeleccionado.idRol, {
+        permisos: permisosRolSeleccionados,
+      });
+
+      await seleccionarRol(rolSeleccionado.idRol);
+      await cargarDatos();
+
+      alert('Permisos actualizados correctamente');
+    } catch (error) {
+      console.error('Error actualizando permisos:', error);
+      alert(
+        error.response?.data?.message ||
+          'No se pudieron actualizar los permisos'
+      );
+    } finally {
+      setGuardandoPermisos(false);
+    }
+  };
+
 
   const handleChangeCrear = (e) => {
     const { name, value } = e.target;
 
     setNuevoUsuario({
       ...nuevoUsuario,
-      [name]: name === 'idRol' ? Number(value) : value,
+      [name]: value,
     });
   };
 
@@ -399,7 +474,7 @@ const UsuariosRolesPage = () => {
     setNuevoUsuario({
       nombreCompleto: '',
       usuarioLogin: '',
-      idRol: 2,
+      nombreRol: 'VENDEDOR',
       password: '',
     });
 
@@ -413,7 +488,8 @@ const UsuariosRolesPage = () => {
       await crearUsuario(nuevoUsuario);
 
       cerrarModalCrear();
-      cargarDatos();
+      await cargarDatos();
+      alert('Usuario creado correctamente');
     } catch (error) {
       console.error('Error creando usuario:', error);
       console.error('Respuesta backend:', error.response?.data);
@@ -432,7 +508,7 @@ const UsuariosRolesPage = () => {
         id,
         nombreCompleto: detalle.nombreCompleto || '',
         usuarioLogin: detalle.usuarioLogin || '',
-        idRol: detalle.idRol || obtenerIdRolDesdeNombre(detalle.rol),
+        nombreRol: detalle.nombreRol || detalle.rol || 'VENDEDOR',
         estado: detalle.estado || 'ACTIVO',
       });
 
@@ -446,7 +522,7 @@ const UsuariosRolesPage = () => {
         id,
         nombreCompleto: usuario.nombreCompleto || '',
         usuarioLogin: usuario.usuarioLogin || '',
-        idRol: usuario.idRol || obtenerIdRolDesdeNombre(usuario.rol),
+        nombreRol: usuario.nombreRol || usuario.rol || 'VENDEDOR',
         estado: usuario.estado || 'ACTIVO',
       });
 
@@ -461,7 +537,7 @@ const UsuariosRolesPage = () => {
       id: null,
       nombreCompleto: '',
       usuarioLogin: '',
-      idRol: 2,
+      nombreRol: 'VENDEDOR',
       estado: 'ACTIVO',
     });
   };
@@ -471,7 +547,7 @@ const UsuariosRolesPage = () => {
 
     setUsuarioEditando({
       ...usuarioEditando,
-      [name]: name === 'idRol' ? Number(value) : value,
+      [name]: value,
     });
   };
 
@@ -482,14 +558,15 @@ const UsuariosRolesPage = () => {
       const request = {
         nombreCompleto: usuarioEditando.nombreCompleto,
         usuarioLogin: usuarioEditando.usuarioLogin,
-        idRol: usuarioEditando.idRol,
+        nombreRol: usuarioEditando.nombreRol,
         estado: usuarioEditando.estado,
       };
 
       await editarUsuario(usuarioEditando.id, request);
 
       cerrarModalEditar();
-      cargarDatos();
+      await cargarDatos();
+      alert('Usuario actualizado correctamente');
     } catch (error) {
       console.error('Error editando usuario:', error);
       alert(error.response?.data?.message || 'No se pudo editar el usuario');
@@ -519,12 +596,23 @@ const UsuariosRolesPage = () => {
     setNuevaPassword('');
   };
 
-  const handleCambiarPassword = (e) => {
+  const handleCambiarPassword = async (e) => {
     e.preventDefault();
 
-    alert('Cambio de contraseña pendiente de conectar al endpoint del backend.');
+    try {
+      const id = obtenerIdUsuario(usuarioPassword);
 
-    cerrarModalPassword();
+      await cambiarPasswordUsuario(id, nuevaPassword);
+
+      cerrarModalPassword();
+      alert('Contraseña actualizada correctamente');
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      alert(
+        error.response?.data?.message ||
+          'No se pudo actualizar la contraseña'
+      );
+    }
   };
 
   if (cargando) {
@@ -714,7 +802,9 @@ const UsuariosRolesPage = () => {
                           </p>
 
                           <span className="badge bg-primary bg-opacity-10 text-primary app-badge">
-                            {obtenerNombreRolVisible(usuario.rol)}
+                            {obtenerNombreRolVisible(
+                              usuario.nombreRol || usuario.rol
+                            )}
                           </span>
                         </div>
                       </div>
@@ -873,17 +963,8 @@ const UsuariosRolesPage = () => {
 
                 <div className="row g-2">
                   {permisos.map((permiso) => {
-                    const permisosRol =
-                      rolSeleccionado.permisos ||
-                      rolSeleccionado.listaPermisos ||
-                      [];
-
-                    const tienePermiso = permisosRol.some(
-                      (p) =>
-                        p.idPermiso === permiso.idPermiso ||
-                        p.codigoPermiso === permiso.codigoPermiso ||
-                        (p.modulo === permiso.modulo &&
-                          p.accion === permiso.accion)
+                    const tienePermiso = permisosRolSeleccionados.includes(
+                      permiso.idPermiso
                     );
 
                     return (
@@ -895,34 +976,71 @@ const UsuariosRolesPage = () => {
                               : 'bg-light'
                           }`}
                         >
-                          <div>
-                            <strong>
-                              <i className="bi bi-check2-square me-2"></i>
-                              {permiso.modulo} - {permiso.accion}
-                            </strong>
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`permiso-${permiso.idPermiso}`}
+                              checked={tienePermiso}
+                              onChange={() =>
+                                cambiarSeleccionPermiso(permiso.idPermiso)
+                              }
+                            />
 
-                            <p className="text-muted small mb-0">
-                              {permiso.descripcion || 'Permiso del sistema'}
-                            </p>
+                            <label
+                              className="form-check-label"
+                              htmlFor={`permiso-${permiso.idPermiso}`}
+                            >
+                              <strong>
+                                <i className="bi bi-check2-square me-2"></i>
+                                {permiso.modulo} - {permiso.accion}
+                              </strong>
+
+                              <p className="text-muted small mb-0">
+                                {permiso.descripcion || 'Permiso del sistema'}
+                              </p>
+                            </label>
                           </div>
 
-                          <span
-                            className={`badge app-badge ${
-                              tienePermiso ? 'bg-success' : 'bg-secondary'
-                            }`}
-                          >
-                            {tienePermiso ? 'Asignado' : 'No asignado'}
-                          </span>
+                          <div>
+                            <span
+                              className={`badge app-badge ${
+                                tienePermiso ? 'bg-success' : 'bg-secondary'
+                              }`}
+                            >
+                              {tienePermiso ? 'Asignado' : 'No asignado'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
+                <div className="d-flex justify-content-end mt-3">
+                  <button
+                    type="button"
+                    className="btn btn-primary app-btn-primary"
+                    onClick={guardarPermisosRol}
+                    disabled={guardandoPermisos}
+                  >
+                    {guardandoPermisos ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-save me-2"></i>
+                        Guardar permisos
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 <div className="alert alert-info mt-3 mb-0">
                   <i className="bi bi-info-circle me-2"></i>
-                  La edición de permisos queda preparada para conectarse al
-                  endpoint correspondiente.
+                  Marca o desmarca permisos y luego guarda los cambios del rol.
                 </div>
               </div>
             )}
@@ -1037,15 +1155,15 @@ const UsuariosRolesPage = () => {
                   <div className="mb-3">
                     <label className="form-label">Rol asignado</label>
                     <select
-                      name="idRol"
+                      name="nombreRol"
                       className="form-select app-select"
-                      value={nuevoUsuario.idRol}
+                      value={nuevoUsuario.nombreRol}
                       onChange={handleChangeCrear}
                       required
                     >
                       {ROLES.map((rol) => (
-                        <option key={rol.idRol} value={rol.idRol}>
-                          {rol.nombre}
+                        <option key={rol.idRol} value={rol.nombre}>
+                          {obtenerNombreRolVisible(rol.nombre)}
                         </option>
                       ))}
                     </select>
@@ -1145,15 +1263,15 @@ const UsuariosRolesPage = () => {
                   <div className="mb-3">
                     <label className="form-label">Rol asignado</label>
                     <select
-                      name="idRol"
+                      name="nombreRol"
                       className="form-select app-select"
-                      value={usuarioEditando.idRol}
+                      value={usuarioEditando.nombreRol}
                       onChange={handleChangeEditar}
                       required
                     >
                       {ROLES.map((rol) => (
-                        <option key={rol.idRol} value={rol.idRol}>
-                          {rol.nombre}
+                        <option key={rol.idRol} value={rol.nombre}>
+                          {obtenerNombreRolVisible(rol.nombre)}
                         </option>
                       ))}
                     </select>
