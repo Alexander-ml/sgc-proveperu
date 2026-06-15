@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/auth/LoginPage';
 import HomePage from '../pages/home/HomePage';
 import UsuariosRolesPage from '../pages/admin/UsuariosRolesPage';
+import VentasPage from '../pages/ventas/VentasPage';
+import NuevaVentaPage from '../pages/ventas/NuevaVentaPage';
 
 function AppRouter() {
   return (
@@ -16,7 +18,8 @@ function AppRouter() {
 
         <Route path="/usuarios-roles" element={<UsuariosRolesPage />} />
 
-        <Route path="/ventas" element={<HomePage />} />
+        <Route path="/ventas" element={<VentasPage />} />
+        <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
         <Route path="/inventario" element={<HomePage />} />
         <Route path="/compras" element={<HomePage />} />
         <Route path="/caja" element={<HomePage />} />
