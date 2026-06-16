@@ -1,6 +1,7 @@
 package com.proveperu.auth.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,7 @@ import com.proveperu.auth.service.AuthService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -77,4 +79,37 @@ public class AuthController {
                 ApiResponse.success(response, "Autenticación exitosa")
         );
     }
+    /**
+ * Registra el cierre de sesión del usuario autenticado.
+ *
+ * El usuario se identifica mediante el token JWT enviado
+ * en la cabecera Authorization.
+ */
+@Operation(
+        summary = "Cerrar sesión",
+        description = "Registra la fecha y hora de cierre de la última sesión abierta del usuario autenticado."
+)
+@SecurityRequirement(name = "bearerAuth")
+@PostMapping("/logout")
+public ResponseEntity<ApiResponse<Void>> logout(
+        Authentication authentication
+) {
+
+    if (authentication == null
+            || "anonymousUser".equals(authentication.getName())) {
+
+        throw new RuntimeException(
+                "No existe un usuario autenticado"
+        );
+    }
+
+    authService.logout(authentication.getName());
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    null,
+                    "Cierre de sesión registrado correctamente"
+            )
+    );
+}
 }

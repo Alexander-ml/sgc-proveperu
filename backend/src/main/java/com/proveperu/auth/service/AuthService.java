@@ -1,21 +1,25 @@
 package com.proveperu.auth.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.proveperu.auth.dto.request.LoginRequest;
 import com.proveperu.auth.dto.response.LoginResponse;
 import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.entity.UsuarioSesion;
 import com.proveperu.m06_usuarios.repository.UsuarioRepository;
+import com.proveperu.m06_usuarios.repository.UsuarioSesionRepository;
 import com.proveperu.security.JwtService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 /**
  * Servicio de aplicación responsable de gestionar el proceso de autenticación
  * de usuarios dentro del módulo de seguridad.
@@ -49,9 +53,15 @@ public class AuthService {
      */
     private final UsuarioRepository usuarioRepository;
     /**
+ * Repositorio utilizado para registrar las sesiones
+ * iniciadas por los usuarios.
+ */
+private final UsuarioSesionRepository usuarioSesionRepository;
+    /**
      * Servicio responsable de la generación y administración
      * de tokens JWT utilizados para la autenticación stateless.
      */
+
     private final JwtService jwtService;
 
     /**
@@ -120,6 +130,18 @@ public class AuthService {
                 userDetails,
                 usuario.getRol().getNombreRol()
         );
+        UsuarioSesion sesion = UsuarioSesion.builder()
+        .usuario(usuario)
+        .fechaHoraInicio(LocalDateTime.now())
+        .fechaHoraFin(null)
+        .build();
+
+usuarioSesionRepository.save(sesion);
+
+log.info(
+        "Sesión registrada correctamente para el usuario: {}",
+        usuario.getUsuarioLogin()
+);
 log.info(
         "JWT generado para usuario: {} con rol {}",
         usuario.getUsuarioLogin(),
@@ -140,4 +162,56 @@ log.info(
                 .expiresIn(jwtService.getExpirationMs())
                 .build();
     }
+
+    /**
+ * Registra el cierre de la última sesión abierta
+ * correspondiente al usuario autenticado.
+ *
+ * @param usuarioLogin correo del usuario autenticado.
+ */
+@Transactional
+public void logout(String usuarioLogin) {
+
+    log.info(
+            "Intento de cierre de sesión para el usuario: {}",
+            usuarioLogin
+    );
+
+    Usuario usuario = usuarioRepository
+            .findByUsuarioLogin(usuarioLogin)
+            .orElseThrow(() -> {
+                log.warn(
+                        "No se encontró al usuario durante el cierre de sesión: {}",
+                        usuarioLogin
+                );
+
+                return new UsernameNotFoundException(
+                        "Usuario no encontrado: " + usuarioLogin
+                );
+            });
+
+    UsuarioSesion sesion = usuarioSesionRepository
+            .findFirstByUsuarioAndFechaHoraFinIsNullOrderByFechaHoraInicioDesc(
+                    usuario
+            )
+            .orElseThrow(() -> {
+                log.warn(
+                        "El usuario {} no tiene una sesión abierta",
+                        usuarioLogin
+                );
+
+                return new RuntimeException(
+                        "No existe una sesión activa para el usuario"
+                );
+            });
+
+    sesion.setFechaHoraFin(LocalDateTime.now());
+
+    usuarioSesionRepository.save(sesion);
+
+    log.info(
+            "Cierre de sesión registrado correctamente para el usuario: {}",
+            usuarioLogin
+    );
+}
 }
