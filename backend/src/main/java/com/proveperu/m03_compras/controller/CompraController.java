@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
+import com.proveperu.m03_compras.dto.response.CompraOpcionesResponse;
 import com.proveperu.m03_compras.service.CompraService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
@@ -56,7 +57,29 @@ public class CompraController {
                 )
         );
     }
+/**
+ * Obtiene las opciones necesarias para registrar una nueva compra.
+ *
+ * @return proveedores, métodos de pago y productos disponibles.
+ */
+@Operation(
+        summary = "Opciones para registrar compra",
+        description = "Obtiene proveedores, métodos de pago y productos activos para el formulario de nueva compra."
+)
+@GetMapping("/opciones")
+public ResponseEntity<ApiResponse<CompraOpcionesResponse>>
+        obtenerOpcionesRegistro() {
 
+    CompraOpcionesResponse response =
+            compraService.obtenerOpcionesRegistro();
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Opciones para registrar compra obtenidas correctamente"
+            )
+    );
+}
     /**
      * Lista las compras registradas en el sistema.
      *

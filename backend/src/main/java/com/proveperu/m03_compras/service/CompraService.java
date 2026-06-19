@@ -1,6 +1,7 @@
 package com.proveperu.m03_compras.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -8,15 +9,27 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.proveperu.m02_inventario.entity.Producto;
+import com.proveperu.m02_inventario.repository.ProductoRepository;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
+import com.proveperu.m03_compras.dto.response.CompraOpcionesResponse;
 import com.proveperu.m03_compras.dto.response.DetalleCompraResponse;
+import com.proveperu.m03_compras.dto.response.MetodoPagoOpcionResponse;
+import com.proveperu.m03_compras.dto.response.ProductoOpcionResponse;
+import com.proveperu.m03_compras.dto.response.ProveedorOpcionResponse;
 import com.proveperu.m03_compras.entity.Compra;
 import com.proveperu.m03_compras.entity.DetalleCompra;
 import com.proveperu.m03_compras.entity.PagoCompra;
+import com.proveperu.m03_compras.entity.Proveedor;
 import com.proveperu.m03_compras.enums.EstadoCompra;
 import com.proveperu.m03_compras.repository.CompraRepository;
+import com.proveperu.m03_compras.repository.ProveedorRepository;
+import com.proveperu.shared.entity.MetodoPago;
+import com.proveperu.shared.enums.EstadoActivoInactivo;
+import com.proveperu.shared.enums.EstadoLogico;
+import com.proveperu.shared.repository.MetodoPagoRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +43,11 @@ import lombok.extern.slf4j.Slf4j;
 public class CompraService {
     
     private final CompraRepository compraRepository;
+    private final ProveedorRepository proveedorRepository;
+
+private final MetodoPagoRepository metodoPagoRepository;
+
+private final ProductoRepository productoRepository;
 
     /**
      * Obtiene los indicadores principales del módulo de compras.
@@ -122,6 +140,116 @@ public class CompraService {
 
         return response;
     }
+    /**
+ * Obtiene las opciones necesarias para registrar
+ * una nueva compra.
+ *
+ * Incluye proveedores, métodos de pago y productos activos.
+ *
+ * @return opciones para el formulario de registro de compras.
+ */
+@Transactional(readOnly = true)
+public CompraOpcionesResponse obtenerOpcionesRegistro() {
+
+    log.info("Consultando opciones para registrar compra");
+
+    List<ProveedorOpcionResponse> proveedores =
+            proveedorRepository.findAll()
+                    .stream()
+                    .filter(proveedor ->
+                            proveedor.getEstadoLogico() == EstadoLogico.ACTIVO
+                                    && proveedor.getEstadoFisico()
+                                            == EstadoActivoInactivo.ACTIVO
+                    )
+                    .sorted(
+                            Comparator.comparing(
+                                    Proveedor::getRazonSocial
+                            )
+                    )
+                    .map(proveedor ->
+                            ProveedorOpcionResponse.builder()
+                                    .idProveedor(
+                                            proveedor.getIdProveedor()
+                                    )
+                                    .ruc(proveedor.getRuc())
+                                    .razonSocial(
+                                            proveedor.getRazonSocial()
+                                    )
+                                    .build()
+                    )
+                    .collect(Collectors.toList());
+
+    List<MetodoPagoOpcionResponse> metodosPago =
+            metodoPagoRepository.findAll()
+                    .stream()
+                    .filter(metodoPago ->
+                            metodoPago.getEstadoLogico()
+                                    == EstadoLogico.ACTIVO
+                                    && metodoPago.getEstadoMetodoPago()
+                                            == EstadoActivoInactivo.ACTIVO
+                    )
+                    .sorted(
+                            Comparator.comparing(
+                                    MetodoPago::getNombreMetodoPago
+                            )
+                    )
+                    .map(metodoPago ->
+                            MetodoPagoOpcionResponse.builder()
+                                    .idMetodoPago(
+                                            metodoPago.getIdMetodoPago()
+                                    )
+                                    .nombreMetodoPago(
+                                            metodoPago.getNombreMetodoPago()
+                                    )
+                                    .build()
+                    )
+                    .collect(Collectors.toList());
+
+    List<ProductoOpcionResponse> productos =
+            productoRepository.findAll()
+                    .stream()
+                    .filter(producto ->
+                            producto.getEstadoLogico() == EstadoLogico.ACTIVO
+                                    && producto.getEstadoFisico()
+                                            == EstadoActivoInactivo.ACTIVO
+                    )
+                    .sorted(
+                            Comparator.comparing(
+                                    Producto::getNombreProducto
+                            )
+                    )
+                    .map(producto ->
+                            ProductoOpcionResponse.builder()
+                                    .idProducto(
+                                            producto.getIdProducto()
+                                    )
+                                    .codigoProducto(
+                                            producto.getCodigoProducto()
+                                    )
+                                    .nombreProducto(
+                                            producto.getNombreProducto()
+                                    )
+                                    .unidadMedida(
+                                            producto.getUnidadMedida()
+                                                    .name()
+                                    )
+                                    .build()
+                    )
+                    .collect(Collectors.toList());
+
+    log.info(
+            "Opciones de compra consultadas. Proveedores: {}, Métodos de pago: {}, Productos: {}",
+            proveedores.size(),
+            metodosPago.size(),
+            productos.size()
+    );
+
+    return CompraOpcionesResponse.builder()
+            .proveedores(proveedores)
+            .metodosPago(metodosPago)
+            .productos(productos)
+            .build();
+}
 /**
  * Obtiene el detalle completo de una compra.
  *
