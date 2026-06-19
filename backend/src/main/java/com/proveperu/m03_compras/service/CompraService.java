@@ -9,15 +9,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
+import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
+import com.proveperu.m03_compras.dto.response.DetalleCompraResponse;
 import com.proveperu.m03_compras.entity.Compra;
+import com.proveperu.m03_compras.entity.DetalleCompra;
 import com.proveperu.m03_compras.entity.PagoCompra;
 import com.proveperu.m03_compras.enums.EstadoCompra;
 import com.proveperu.m03_compras.repository.CompraRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 /**
  * Servicio encargado de gestionar las operaciones
  * de consulta del módulo de compras.
@@ -120,7 +122,48 @@ public class CompraService {
 
         return response;
     }
+/**
+ * Obtiene el detalle completo de una compra.
+ *
+ * @param idCompra identificador de la compra.
+ * @return detalle de la compra.
+ */
+@Transactional(readOnly = true)
+public CompraDetalleResponse obtenerDetalleCompra(Integer idCompra) {
 
+    log.info("Consultando detalle de compra con id {}", idCompra);
+
+    Compra compra = compraRepository.findById(idCompra)
+            .orElseThrow(() -> {
+                log.warn("No se encontró la compra con id {}", idCompra);
+                return new RuntimeException("Compra no encontrada");
+            });
+
+    List<DetalleCompraResponse> productos = compra.getDetallesCompra()
+            .stream()
+            .map(this::mapearDetalleProducto)
+            .collect(Collectors.toList());
+
+    log.info(
+            "Detalle de compra consultado correctamente. Id: {}, productos: {}",
+            idCompra,
+            productos.size()
+    );
+
+    return CompraDetalleResponse.builder()
+            .idCompra(compra.getIdCompra())
+            .numeroCompra(generarNumeroCompra(compra))
+            .proveedor(compra.getProveedor().getRazonSocial())
+            .estado(compra.getEstadoFisico().name())
+            .fecha(compra.getFechaHoraCreacion())
+            .metodoPago(obtenerMetodoPago(compra))
+            .registradoPor(
+                    compra.getUsuarioRegistro().getNombreCompleto()
+            )
+            .productos(productos)
+            .total(compra.getTotal())
+            .build();
+}
     /**
      * Convierte una entidad Compra en una respuesta
      * para la tabla principal.
@@ -145,7 +188,22 @@ public class CompraService {
                 )
                 .build();
     }
+/**
+ * Convierte un detalle de compra en respuesta
+ * para el modal de detalle.
+ */
+private DetalleCompraResponse mapearDetalleProducto(
+        DetalleCompra detalle
+) {
 
+    return DetalleCompraResponse.builder()
+            .idProducto(detalle.getProducto().getIdProducto())
+            .producto(detalle.getProducto().getNombreProducto())
+            .cantidad(detalle.getCantidad())
+            .precioCompra(detalle.getPrecioUnitarioCompra())
+            .subtotal(detalle.getSubtotal())
+            .build();
+}
     /**
      * Verifica si una compra coincide con el texto buscado.
      */
