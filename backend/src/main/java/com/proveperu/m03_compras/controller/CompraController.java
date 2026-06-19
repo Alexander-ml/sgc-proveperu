@@ -2,12 +2,16 @@ package com.proveperu.m03_compras.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
@@ -18,6 +22,7 @@ import com.proveperu.shared.dto.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 /**
  * Controlador REST encargado de exponer
@@ -77,6 +82,48 @@ public ResponseEntity<ApiResponse<CompraOpcionesResponse>>
             ApiResponse.success(
                     response,
                     "Opciones para registrar compra obtenidas correctamente"
+            )
+    );
+}
+/**
+ * Registra una nueva compra a un proveedor.
+ *
+ * La compra se registra inicialmente como PENDIENTE,
+ * sin actualizar stock hasta que se reciba la compra.
+ *
+ * @param request datos de la compra.
+ * @param authentication usuario autenticado que registra la compra.
+ * @return detalle de la compra registrada.
+ */
+@Operation(
+        summary = "Registrar compra",
+        description = "Registra una nueva compra con proveedor, método de pago y productos. La compra queda inicialmente como PENDIENTE."
+)
+@PostMapping
+public ResponseEntity<ApiResponse<CompraDetalleResponse>>
+        registrarCompra(
+                @Valid @RequestBody RegistrarCompraRequest request,
+                Authentication authentication
+        ) {
+
+    if (authentication == null
+            || "anonymousUser".equals(authentication.getName())) {
+
+        throw new RuntimeException(
+                "Debe iniciar sesión para registrar una compra"
+        );
+    }
+
+    CompraDetalleResponse response =
+            compraService.registrarCompra(
+                    request,
+                    authentication.getName()
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Compra registrada correctamente"
             )
     );
 }

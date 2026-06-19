@@ -1,9 +1,14 @@
 package com.proveperu.m03_compras.service;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -11,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.proveperu.m02_inventario.entity.Producto;
 import com.proveperu.m02_inventario.repository.ProductoRepository;
+import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
+import com.proveperu.m03_compras.dto.request.RegistrarDetalleCompraRequest;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
@@ -21,11 +28,17 @@ import com.proveperu.m03_compras.dto.response.ProductoOpcionResponse;
 import com.proveperu.m03_compras.dto.response.ProveedorOpcionResponse;
 import com.proveperu.m03_compras.entity.Compra;
 import com.proveperu.m03_compras.entity.DetalleCompra;
+import com.proveperu.m03_compras.entity.DetalleCompraId;
 import com.proveperu.m03_compras.entity.PagoCompra;
 import com.proveperu.m03_compras.entity.Proveedor;
 import com.proveperu.m03_compras.enums.EstadoCompra;
+import com.proveperu.m03_compras.enums.EstadoPagoCompra;
 import com.proveperu.m03_compras.repository.CompraRepository;
+import com.proveperu.m03_compras.repository.DetalleCompraRepository;
+import com.proveperu.m03_compras.repository.PagoCompraRepository;
 import com.proveperu.m03_compras.repository.ProveedorRepository;
+import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.m06_usuarios.repository.UsuarioRepository;
 import com.proveperu.shared.entity.MetodoPago;
 import com.proveperu.shared.enums.EstadoActivoInactivo;
 import com.proveperu.shared.enums.EstadoLogico;
@@ -48,6 +61,12 @@ public class CompraService {
 private final MetodoPagoRepository metodoPagoRepository;
 
 private final ProductoRepository productoRepository;
+
+private final DetalleCompraRepository detalleCompraRepository;
+
+private final PagoCompraRepository pagoCompraRepository;
+
+private final UsuarioRepository usuarioRepository;
 
     /**
      * Obtiene los indicadores principales del módulo de compras.
@@ -249,6 +268,165 @@ public CompraOpcionesResponse obtenerOpcionesRegistro() {
             .metodosPago(metodosPago)
             .productos(productos)
             .build();
+}
+/**
+ * Registra una nueva compra con sus productos y pago.
+ *
+ * La compra se registra inicialmente como PENDIENTE,
+ * porque el stock debe actualizarse recién cuando se reciba la compra.
+ *
+ * @param request datos enviados desde el formulario de compra.
+ * @param usuarioLogin usuario autenticado que registra la compra.
+ * @return detalle de la compra registrada.
+ */
+@Transactional
+public CompraDetalleResponse registrarCompra(
+        RegistrarCompraRequest request,
+        String usuarioLogin
+) {
+
+    log.info(
+            "Registrando nueva compra. Usuario: {}, Proveedor: {}, Método de pago: {}",
+            usuarioLogin,
+            request.getIdProveedor(),
+            request.getIdMetodoPago()
+    );
+
+    Usuario usuario = usuarioRepository.findByUsuarioLogin(usuarioLogin)
+            .orElseThrow(() -> {
+                log.warn(
+                        "No se encontró el usuario autenticado: {}",
+                        usuarioLogin
+                );
+                return new RuntimeException("Usuario no encontrado");
+            });
+
+    Proveedor proveedor = proveedorRepository
+            .findById(request.getIdProveedor())
+            .orElseThrow(() -> {
+                log.warn(
+                        "No se encontró el proveedor con id {}",
+                        request.getIdProveedor()
+                );
+                return new RuntimeException("Proveedor no encontrado");
+            });
+
+    MetodoPago metodoPago = metodoPagoRepository
+            .findById(request.getIdMetodoPago())
+            .orElseThrow(() -> {
+                log.warn(
+                        "No se encontró el método de pago con id {}",
+                        request.getIdMetodoPago()
+                );
+                return new RuntimeException("Método de pago no encontrado");
+            });
+
+    Set<Integer> productosAgregados = new HashSet<>();
+    List<DetalleCompra> detalles = new ArrayList<>();
+    BigDecimal totalCompra = BigDecimal.ZERO;
+
+    for (RegistrarDetalleCompraRequest detalleRequest
+            : request.getProductos()) {
+
+        if (!productosAgregados.add(detalleRequest.getIdProducto())) {
+            log.warn(
+                    "Producto duplicado en la compra. Id producto: {}",
+                    detalleRequest.getIdProducto()
+            );
+            throw new RuntimeException(
+                    "No puede repetir el mismo producto en la compra"
+            );
+        }
+
+        Producto producto = productoRepository
+                .findById(detalleRequest.getIdProducto())
+                .orElseThrow(() -> {
+                    log.warn(
+                            "No se encontró el producto con id {}",
+                            detalleRequest.getIdProducto()
+                    );
+                    return new RuntimeException("Producto no encontrado");
+                });
+
+        BigDecimal subtotal = detalleRequest.getCantidad()
+                .multiply(detalleRequest.getPrecioUnitarioCompra())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        totalCompra = totalCompra.add(subtotal);
+
+        DetalleCompra detalle = DetalleCompra.builder()
+                .producto(producto)
+                .cantidad(detalleRequest.getCantidad())
+                .precioUnitarioCompra(
+                        detalleRequest.getPrecioUnitarioCompra()
+                                .setScale(2, RoundingMode.HALF_UP)
+                )
+                .subtotal(subtotal)
+                .build();
+
+        detalles.add(detalle);
+    }
+
+    Compra compra = Compra.builder()
+            .proveedor(proveedor)
+            .usuarioRegistro(usuario)
+            .total(totalCompra)
+            .estadoFisico(EstadoCompra.PENDIENTE)
+            .build();
+
+    compra.setEstadoLogico(EstadoLogico.ACTIVO);
+    compra.setFechaHoraCreacion(LocalDateTime.now());
+
+    compra = compraRepository.saveAndFlush(compra);
+
+    for (DetalleCompra detalle : detalles) {
+
+        detalle.setCompra(compra);
+        detalle.setId(
+                new DetalleCompraId(
+                        compra.getIdCompra(),
+                        detalle.getProducto().getIdProducto()
+                )
+        );
+    }
+
+   detalleCompraRepository.saveAll(detalles);
+
+PagoCompra pagoCompra = PagoCompra.builder()
+        .compra(compra)
+        .metodoPago(metodoPago)
+        .usuarioRegistro(usuario)
+        .monto(totalCompra)
+        .fechaHoraPago(LocalDateTime.now())
+        .estadoFisico(EstadoPagoCompra.REGISTRADO)
+        .build();
+
+pagoCompra.setEstadoLogico(EstadoLogico.ACTIVO);
+
+pagoCompraRepository.save(pagoCompra);
+
+log.info(
+        "Compra registrada correctamente. Id: {}, Total: {}, Productos: {}",
+        compra.getIdCompra(),
+        totalCompra,
+        detalles.size()
+);
+
+List<DetalleCompraResponse> productosResponse = detalles.stream()
+        .map(this::mapearDetalleProducto)
+        .collect(Collectors.toList());
+
+return CompraDetalleResponse.builder()
+        .idCompra(compra.getIdCompra())
+        .numeroCompra(generarNumeroCompra(compra))
+        .proveedor(compra.getProveedor().getRazonSocial())
+        .estado(compra.getEstadoFisico().name())
+        .fecha(compra.getFechaHoraCreacion())
+        .metodoPago(metodoPago.getNombreMetodoPago())
+        .registradoPor(usuario.getNombreCompleto())
+        .productos(productosResponse)
+        .total(compra.getTotal())
+        .build();
 }
 /**
  * Obtiene el detalle completo de una compra.
