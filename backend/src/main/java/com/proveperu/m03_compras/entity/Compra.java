@@ -1,14 +1,31 @@
 package com.proveperu.m03_compras.entity;
 
-import com.proveperu.m03_compras.enums.EstadoCompra;
-import com.proveperu.m06_usuarios.entity.Usuario;
-import com.proveperu.shared.entity.BaseCreationEntity;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.proveperu.m03_compras.enums.EstadoCompra;
+import com.proveperu.m06_usuarios.entity.Usuario;
+import com.proveperu.shared.entity.BaseCreationEntity;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Representa la cabecera de una compra registrada
