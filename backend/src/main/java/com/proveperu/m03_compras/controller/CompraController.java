@@ -16,6 +16,7 @@ import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
 import com.proveperu.m03_compras.dto.response.CompraOpcionesResponse;
+import com.proveperu.m03_compras.dto.response.ProveedorListadoResponse;
 import com.proveperu.m03_compras.service.CompraService;
 import com.proveperu.shared.dto.response.ApiResponse;
 
@@ -82,6 +83,29 @@ public ResponseEntity<ApiResponse<CompraOpcionesResponse>>
             ApiResponse.success(
                     response,
                     "Opciones para registrar compra obtenidas correctamente"
+            )
+    );
+}
+/**
+ * Lista los proveedores registrados para el módulo de compras.
+ *
+ * @return lista de proveedores.
+ */
+@Operation(
+        summary = "Listar proveedores",
+        description = "Obtiene los proveedores registrados para mostrarlos en la pestaña de proveedores del módulo de compras."
+)
+@GetMapping("/proveedores")
+public ResponseEntity<ApiResponse<List<ProveedorListadoResponse>>>
+        listarProveedores() {
+
+    List<ProveedorListadoResponse> response =
+            compraService.listarProveedores();
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Proveedores obtenidos correctamente"
             )
     );
 }

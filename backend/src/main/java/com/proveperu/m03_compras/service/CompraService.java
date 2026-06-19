@@ -25,6 +25,7 @@ import com.proveperu.m03_compras.dto.response.CompraOpcionesResponse;
 import com.proveperu.m03_compras.dto.response.DetalleCompraResponse;
 import com.proveperu.m03_compras.dto.response.MetodoPagoOpcionResponse;
 import com.proveperu.m03_compras.dto.response.ProductoOpcionResponse;
+import com.proveperu.m03_compras.dto.response.ProveedorListadoResponse;
 import com.proveperu.m03_compras.dto.response.ProveedorOpcionResponse;
 import com.proveperu.m03_compras.entity.Compra;
 import com.proveperu.m03_compras.entity.DetalleCompra;
@@ -268,6 +269,45 @@ public CompraOpcionesResponse obtenerOpcionesRegistro() {
             .metodosPago(metodosPago)
             .productos(productos)
             .build();
+}
+/**
+ * Lista los proveedores registrados para el módulo de compras.
+ *
+ * @return lista de proveedores activos y registrados.
+ */
+@Transactional(readOnly = true)
+public List<ProveedorListadoResponse> listarProveedores() {
+
+    log.info("Listando proveedores del módulo de compras");
+
+    List<ProveedorListadoResponse> proveedores =
+            proveedorRepository.findAllByOrderByRazonSocialAsc()
+                    .stream()
+                    .filter(proveedor ->
+                            proveedor.getEstadoLogico() == EstadoLogico.ACTIVO
+                    )
+                    .map(proveedor ->
+                            ProveedorListadoResponse.builder()
+                                    .idProveedor(proveedor.getIdProveedor())
+                                    .ruc(proveedor.getRuc())
+                                    .razonSocial(proveedor.getRazonSocial())
+                                    .telefono(proveedor.getTelefono())
+                                    .direccion(proveedor.getDireccion())
+                                    .estado(
+                                            proveedor.getEstadoFisico() == EstadoActivoInactivo.ACTIVO
+                                                    ? "ACTIVO"
+                                                    : "INACTIVO"
+                                    )
+                                    .build()
+                    )
+                    .collect(Collectors.toList());
+
+    log.info(
+            "Proveedores listados correctamente. Total: {}",
+            proveedores.size()
+    );
+
+    return proveedores;
 }
 /**
  * Registra una nueva compra con sus productos y pago.
