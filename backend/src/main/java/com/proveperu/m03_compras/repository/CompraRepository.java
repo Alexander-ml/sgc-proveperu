@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.proveperu.m03_compras.entity.Compra;
+import com.proveperu.m03_compras.entity.Proveedor;
 import com.proveperu.m03_compras.enums.EstadoCompra;
 
 @Repository
@@ -22,4 +23,11 @@ public interface CompraRepository extends JpaRepository<Compra, Integer> {
      * Lista todas las compras ordenadas desde la más reciente.
      */
     List<Compra> findAllByOrderByFechaHoraCreacionDesc();
+    /**
+ * Lista las compras realizadas a un proveedor específico,
+ * ordenadas desde la más reciente.
+ */
+List<Compra> findByProveedorOrderByFechaHoraCreacionDesc(
+        Proveedor proveedor
+);
 }

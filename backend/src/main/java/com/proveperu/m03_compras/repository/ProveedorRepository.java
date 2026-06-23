@@ -14,4 +14,8 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, Integer> {
      * por razón social.
      */
     List<Proveedor> findAllByOrderByRazonSocialAsc();
+     /**
+     * Verifica si ya existe un proveedor con el mismo RUC.
+     */
+    boolean existsByRuc(String ruc);
 }

@@ -18,6 +18,7 @@ import com.proveperu.m02_inventario.entity.Producto;
 import com.proveperu.m02_inventario.repository.ProductoRepository;
 import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarDetalleCompraRequest;
+import com.proveperu.m03_compras.dto.request.RegistrarProveedorRequest;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
@@ -308,6 +309,107 @@ public List<ProveedorListadoResponse> listarProveedores() {
     );
 
     return proveedores;
+}
+/**
+ * Registra un nuevo proveedor dentro del módulo de compras.
+ *
+ * @param request datos del proveedor a registrar.
+ * @return proveedor registrado.
+ */
+@Transactional
+public ProveedorListadoResponse registrarProveedor(
+        RegistrarProveedorRequest request
+) {
+
+    log.info(
+            "Registrando nuevo proveedor con RUC: {}",
+            request.getRuc()
+    );
+
+    if (proveedorRepository.existsByRuc(request.getRuc())) {
+        throw new RuntimeException("Ya existe un proveedor registrado con ese RUC");
+    }
+
+    Proveedor proveedor = new Proveedor();
+    proveedor.setRuc(request.getRuc().trim());
+    proveedor.setRazonSocial(request.getRazonSocial().trim());
+    proveedor.setTelefono(
+            request.getTelefono() != null
+                    ? request.getTelefono().trim()
+                    : null
+    );
+    proveedor.setDireccion(
+            request.getDireccion() != null
+                    ? request.getDireccion().trim()
+                    : null
+    );
+    proveedor.setEstadoFisico(EstadoActivoInactivo.ACTIVO);
+    proveedor.setEstadoLogico(EstadoLogico.ACTIVO);
+    LocalDateTime ahora = LocalDateTime.now();
+
+proveedor.setFechaHoraCreacion(ahora);
+proveedor.setFechaHoraActualizacion(ahora);
+
+    Proveedor proveedorGuardado =
+            proveedorRepository.save(proveedor);
+
+    log.info(
+            "Proveedor registrado correctamente. Id: {}, RUC: {}",
+            proveedorGuardado.getIdProveedor(),
+            proveedorGuardado.getRuc()
+    );
+
+    return ProveedorListadoResponse.builder()
+            .idProveedor(proveedorGuardado.getIdProveedor())
+            .ruc(proveedorGuardado.getRuc())
+            .razonSocial(proveedorGuardado.getRazonSocial())
+            .telefono(proveedorGuardado.getTelefono())
+            .direccion(proveedorGuardado.getDireccion())
+            .estado(proveedorGuardado.getEstadoFisico().name())
+            .build();
+}
+
+/**
+ * Lista las compras realizadas a un proveedor específico.
+ *
+ * @param idProveedor identificador del proveedor.
+ * @return lista de compras asociadas al proveedor.
+ */
+@Transactional(readOnly = true)
+public List<CompraListadoResponse> listarComprasPorProveedor(
+        Integer idProveedor
+) {
+
+    log.info(
+            "Listando compras del proveedor con id: {}",
+            idProveedor
+    );
+
+    Proveedor proveedor = proveedorRepository.findById(idProveedor)
+            .orElseThrow(() ->
+                    new RuntimeException("Proveedor no encontrado")
+            );
+
+    if (proveedor.getEstadoLogico() != EstadoLogico.ACTIVO) {
+        throw new RuntimeException("El proveedor no se encuentra activo");
+    }
+
+    List<CompraListadoResponse> compras =
+            compraRepository.findByProveedorOrderByFechaHoraCreacionDesc(proveedor)
+                    .stream()
+                    .filter(compra ->
+                            compra.getEstadoLogico() == EstadoLogico.ACTIVO
+                    )
+                    .map(this::mapearListado)
+                    .collect(Collectors.toList());
+
+    log.info(
+            "Compras del proveedor listadas correctamente. Proveedor: {}, Total compras: {}",
+            proveedor.getRazonSocial(),
+            compras.size()
+    );
+
+    return compras;
 }
 /**
  * Registra una nueva compra con sus productos y pago.

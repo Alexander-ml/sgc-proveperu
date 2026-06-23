@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
+import com.proveperu.m03_compras.dto.request.RegistrarProveedorRequest;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
 import com.proveperu.m03_compras.dto.response.CompraDetalleResponse;
 import com.proveperu.m03_compras.dto.response.CompraListadoResponse;
@@ -106,6 +107,59 @@ public ResponseEntity<ApiResponse<List<ProveedorListadoResponse>>>
             ApiResponse.success(
                     response,
                     "Proveedores obtenidos correctamente"
+            )
+    );
+}
+
+/**
+ * Registra un nuevo proveedor para el módulo de compras.
+ *
+ * @param request datos del proveedor.
+ * @return proveedor registrado.
+ */
+@Operation(
+        summary = "Registrar proveedor",
+        description = "Registra un nuevo proveedor usando los campos definidos en la base de datos."
+)
+@PostMapping("/proveedores")
+public ResponseEntity<ApiResponse<ProveedorListadoResponse>>
+        registrarProveedor(
+                @Valid @RequestBody RegistrarProveedorRequest request
+        ) {
+
+    ProveedorListadoResponse response =
+            compraService.registrarProveedor(request);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Proveedor registrado correctamente"
+            )
+    );
+}
+/**
+ * Lista las compras realizadas a un proveedor específico.
+ *
+ * @param idProveedor identificador del proveedor.
+ * @return lista de compras del proveedor.
+ */
+@Operation(
+        summary = "Listar compras por proveedor",
+        description = "Obtiene las compras registradas para un proveedor específico."
+)
+@GetMapping("/proveedores/{idProveedor}/compras")
+public ResponseEntity<ApiResponse<List<CompraListadoResponse>>>
+        listarComprasPorProveedor(
+                @PathVariable Integer idProveedor
+        ) {
+
+    List<CompraListadoResponse> response =
+            compraService.listarComprasPorProveedor(idProveedor);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Compras del proveedor obtenidas correctamente"
             )
     );
 }
