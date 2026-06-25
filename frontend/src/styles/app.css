@@ -182,3 +182,159 @@ body {
     text-align: left;
   }
 }
+
+
+.sales-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 260px; /* ancho del sidebar */
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sales-detail-modal {
+  width: min(920px, calc(100vw - 310px));
+  max-height: 88vh;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(8, 34, 74, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sales-detail-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid #dbe3ef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sales-detail-title {
+  font-size: 18px !important;
+  font-weight: 800;
+  margin: 0;
+}
+
+.sales-detail-body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sales-detail-footer {
+  padding: 10px 18px;
+  border-top: 1px solid #dbe3ef;
+  background: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Reducir todo el texto dentro del modal */
+.sales-detail-modal,
+.sales-detail-modal table,
+.sales-detail-modal p,
+.sales-detail-modal span,
+.sales-detail-modal td,
+.sales-detail-modal th,
+.sales-detail-modal button,
+.sales-detail-modal strong {
+  font-size: 12.5px !important;
+}
+
+.sales-detail-modal h5 {
+  font-size: 18px !important;
+}
+
+.sales-detail-modal h6 {
+  font-size: 13.5px !important;
+}
+
+/* Tarjetas superiores */
+.sales-detail-info-card {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 68px;
+}
+
+.sales-detail-info-card span {
+  font-size: 11.5px !important;
+  color: #6b7a90;
+}
+
+.sales-detail-info-card h6 {
+  font-size: 13px !important;
+  margin: 4px 0 0;
+  line-height: 1.25;
+}
+
+/* Tabla compacta */
+.sales-detail-modal .table {
+  margin-bottom: 0;
+}
+
+.sales-detail-modal .table th {
+  font-size: 11.5px !important;
+  padding: 7px 8px;
+  white-space: nowrap;
+}
+
+.sales-detail-modal .table td {
+  font-size: 12.5px !important;
+  padding: 7px 8px;
+  vertical-align: middle;
+}
+
+.sales-detail-modal .table td:first-child {
+  max-width: 360px;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+/* Caja resumen */
+.sales-summary-box {
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.sales-summary-box span,
+.sales-summary-box strong {
+  font-size: 12.5px !important;
+}
+
+/* Botón cerrar más pequeño */
+.sales-detail-footer .btn {
+  padding: 5px 12px;
+  font-size: 12.5px !important;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .sales-detail-overlay {
+    left: 0;
+    padding: 12px;
+  }
+
+  .sales-detail-modal {
+    width: calc(100vw - 24px);
+    max-height: 90vh;
+  }
+}
+
+.text-purple {
+  color: #8a2be2 !important;
+}
+
+.bg-purple {
+  background-color: #8a2be2 !important;
+}

@@ -5,6 +5,10 @@ import HomePage from '../pages/home/HomePage';
 import UsuariosRolesPage from '../pages/admin/UsuariosRolesPage';
 import RoleRoute from './RoleRoute';
 import VentasPage from '../pages/ventas/VentasPage';
+import InventarioPage from '../pages/inventario/InventarioPage';
+import ComprasPage from '../pages/compras/ComprasPage';
+import CajaPage from '../pages/caja/CajaPage';
+import ClientesPage from '../pages/clientes/ClientesPage';
 
 function AppRouter() {
   return (
@@ -38,7 +42,7 @@ function AppRouter() {
           path="/inventario"
           element={
             <RoleRoute allowedRoles={['ADMIN', 'ALMACEN', 'COMPRAS']}>
-              <HomePage />
+              <InventarioPage />
             </RoleRoute>
           }
         />
@@ -47,7 +51,7 @@ function AppRouter() {
           path="/compras"
           element={
             <RoleRoute allowedRoles={['ADMIN', 'COMPRAS', 'ALMACEN']}>
-              <HomePage />
+              <ComprasPage />
             </RoleRoute>
           }
         />
@@ -56,7 +60,7 @@ function AppRouter() {
           path="/caja"
           element={
             <RoleRoute allowedRoles={['ADMIN', 'CAJERO']}>
-              <HomePage />
+              <CajaPage />
             </RoleRoute>
           }
         />
@@ -74,7 +78,7 @@ function AppRouter() {
           path="/clientes"
           element={
             <RoleRoute allowedRoles={['ADMIN', 'VENDEDOR']}>
-              <HomePage />
+              <ClientesPage />
             </RoleRoute>
           }
         />
