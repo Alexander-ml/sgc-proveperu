@@ -22,4 +22,17 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     
     @EntityGraph(attributePaths = {"rol"})
     List<Usuario> findByNombreCompletoContainingIgnoreCase(String nombreCompleto);
+
+    /**
+     * Verifica si ya existe un usuario con el email indicado.
+     *
+     * <p>
+     * Utilizado al registrar nuevos usuarios para
+     * prevenir duplicados (RF-168).
+     * </p>
+     *
+     * @param usuarioLogin email a verificar.
+     * @return {@code true} si ya existe un usuario con ese login.
+     */
+    boolean existsByUsuarioLogin(String usuarioLogin);
 }

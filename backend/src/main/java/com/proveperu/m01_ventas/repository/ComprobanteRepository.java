@@ -50,4 +50,14 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Intege
             WHERE c.venta.idVenta IN :ventaIds
             """)
     List<Comprobante> findByVentaIdIn(@Param("ventaIds") List<Integer> ventaIds);
+
+    /**
+     * Verifica si ya existe un comprobante con la serie
+     * y correlativo indicados para prevenir duplicados.
+     *
+     * @param serie       serie del comprobante.
+     * @param correlativo correlativo del comprobante.
+     * @return {@code true} si ya existe el comprobante.
+     */
+    boolean existsBySerieAndCorrelativo(String serie, String correlativo);
 }
