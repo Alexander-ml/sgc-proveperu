@@ -12,8 +12,8 @@ const METODOS_PAGO = [
   { id: '', nombre: 'Todos los pagos' },
   { id: 1, nombre: 'Efectivo' },
   { id: 2, nombre: 'Transferencia' },
-  { id: 3, nombre: 'Yape / Plin' },
-  { id: 4, nombre: 'POS / Tarjeta' },
+  { id: 3, nombre: 'Yape' },
+  { id: 4, nombre: 'POS' },
 ];
 
 const VentasPage = () => {
@@ -64,22 +64,15 @@ const VentasPage = () => {
     });
   };
 
-  const obtenerNombreCliente = (venta) => {
-    if (!venta) return 'Sin cliente';
+  const obtenerNombreCliente = (cliente) => {
+    if (!cliente) return 'Sin cliente';
 
     return (
-      venta.clienteTexto ||
-      venta.cliente?.nombreCompleto ||
-      venta.cliente?.razonSocial ||
-      venta.cliente?.nombre ||
-      venta.cliente?.nombreCliente ||
-      venta.nombreCliente ||
-      venta.clienteNombre ||
-      venta.razonSocialCliente ||
-      venta.nombreCompletoCliente ||
-      venta.razonSocial ||
-      venta.nombreCompleto ||
-      venta.nombre ||
+      cliente.nombreCompleto ||
+      cliente.razonSocial ||
+      cliente.nombre ||
+      cliente.nombreCliente ||
+      cliente.nombreRazonSocial ||
       'Sin cliente'
     );
   };
@@ -91,53 +84,27 @@ const VentasPage = () => {
       vendedor.nombreCompleto ||
       vendedor.nombre ||
       vendedor.usuarioLogin ||
+      vendedor.nombreUsuario ||
       'Vendedor'
     );
   };
 
+  const obtenerMetodoPago = (venta) => {
+    if (!venta.metodosPago || venta.metodosPago.length === 0) {
+      return 'Sin pago';
+    }
 
-const obtenerMetodoPago = (venta) => {
-  const pagos = venta.metodosPago || venta.pagos || [];
-
-  if (pagos.length === 0) {
-    return 'Sin pago';
-  }
-
-  return pagos
-    .map((pago) => {
-      const idMetodo =
-        pago.metodoPagoId ||
-        pago.idMetodoPago ||
-        pago.idMetodo ||
-        pago.id;
-
-      const nombreMetodo =
-        pago.nombreMetodoPago ||
-        pago.metodoPago ||
-        pago.nombre ||
-        pago.descripcion ||
-        '';
-
-      if (idMetodo === 1) return 'EFECTIVO';
-      if (idMetodo === 2) return 'TRANSFERENCIA';
-      if (idMetodo === 3) return 'YAPE / PLIN';
-      if (idMetodo === 4) return 'TARJETA';
-
-      const nombre = nombreMetodo.toString().toUpperCase();
-
-      if (nombre.includes('EFECTIVO')) return 'EFECTIVO';
-      if (nombre.includes('TRANSFERENCIA')) return 'TRANSFERENCIA';
-      if (nombre.includes('YAPE')) return 'YAPE / PLIN';
-      if (nombre.includes('PLIN')) return 'YAPE / PLIN';
-      if (nombre.includes('POS')) return 'TARJETA';
-      if (nombre.includes('TARJETA')) return 'TARJETA';
-
-      return nombreMetodo || 'Sin pago';
-    })
-    .filter(Boolean)
-    .join(', ');
-};
-
+    return venta.metodosPago
+      .map(
+        (pago) =>
+          pago.nombreMetodoPago ||
+          pago.metodoPago ||
+          pago.nombre ||
+          pago.descripcion
+      )
+      .filter(Boolean)
+      .join(', ');
+  };
 
   const obtenerComprobante = (comprobante) => {
     if (!comprobante) {
@@ -156,12 +123,41 @@ const obtenerMetodoPago = (venta) => {
     const numero =
       comprobante.numeroComprobante ||
       comprobante.numero ||
+      comprobante.numeroDocumento ||
       `${comprobante.serie || ''}-${comprobante.correlativo || ''}`;
 
     return {
       tipo,
       numero,
     };
+  };
+
+  const obtenerNombreProducto = (producto) => {
+    return (
+      producto.nombreProducto ||
+      producto.nombre ||
+      producto.descripcion ||
+      producto.producto ||
+      'Producto'
+    );
+  };
+
+  const obtenerPrecioProducto = (producto) => {
+    return producto.precioUnitario || producto.precio || producto.precioVenta || 0;
+  };
+
+  const obtenerSubtotalProducto = (producto) => {
+    return producto.subtotal || producto.subtotalProducto || producto.importe || 0;
+  };
+
+  const obtenerNombrePago = (pago) => {
+    return (
+      pago.nombreMetodoPago ||
+      pago.metodoPago ||
+      pago.nombre ||
+      pago.descripcion ||
+      'Pago'
+    );
   };
 
   const cargarVentas = async () => {
@@ -205,38 +201,15 @@ const obtenerMetodoPago = (venta) => {
     cargarVentas();
   };
 
-  const abrirDetalle = async (venta) => {
+  const abrirDetalle = async (idVenta) => {
     try {
       setCargandoDetalle(true);
       setMostrarDetalle(true);
+      setDetalleVenta(null);
 
-      const nombreClienteListado = obtenerNombreCliente(venta);
+      const response = await obtenerDetalleVenta(idVenta);
 
-      setDetalleVenta({
-        ...venta,
-        clienteTexto: nombreClienteListado,
-      });
-
-      const response = await obtenerDetalleVenta(venta.idVenta);
-
-      console.log('Venta del listado:', venta);
-      console.log('Detalle del backend:', response.data);
-
-      setDetalleVenta({
-        ...venta,
-        ...response.data,
-
-        cliente: response.data?.cliente || venta.cliente,
-        vendedor: response.data?.vendedor || venta.vendedor,
-
-        clienteTexto:
-          response.data?.clienteTexto ||
-          response.data?.nombreCliente ||
-          response.data?.clienteNombre ||
-          response.data?.razonSocialCliente ||
-          response.data?.nombreCompletoCliente ||
-          nombreClienteListado,
-      });
+      setDetalleVenta(response.data);
     } catch (error) {
       console.error('Error obteniendo detalle de venta:', error);
       alert('No se pudo cargar el detalle de la venta.');
@@ -454,7 +427,7 @@ const obtenerMetodoPago = (venta) => {
 
                       <td>
                         <i className="bi bi-person me-2 text-muted"></i>
-                        {obtenerNombreCliente(venta)}
+                        {obtenerNombreCliente(venta.cliente)}
                       </td>
 
                       <td className="text-end fw-bold">
@@ -498,7 +471,7 @@ const obtenerMetodoPago = (venta) => {
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary"
-                          onClick={() => abrirDetalle(venta)}
+                          onClick={() => abrirDetalle(venta.idVenta)}
                           title="Ver detalle"
                         >
                           <i className="bi bi-eye"></i>
@@ -547,222 +520,204 @@ const obtenerMetodoPago = (venta) => {
       </div>
 
       {mostrarDetalle && (
-        <div
-          className="modal d-block"
-          tabIndex="-1"
-          style={{ background: 'rgba(0, 0, 0, 0.45)' }}
-        >
-          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  <i className="bi bi-receipt me-2 text-primary"></i>
-                  Detalle de venta {detalleVenta?.numeroVenta || ''}
-                </h5>
+        <div className="sales-detail-overlay">
+          <div className="sales-detail-modal">
+            <div className="sales-detail-header">
+              <h5 className="sales-detail-title">
+                <i className="bi bi-receipt me-2 text-primary"></i>
+                Detalle de venta {detalleVenta?.numeroVenta || ''}
+              </h5>
 
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={cerrarDetalle}
-                ></button>
-              </div>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={cerrarDetalle}
+              ></button>
+            </div>
 
-              <div className="modal-body">
-                {cargandoDetalle ? (
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="spinner-border spinner-border-sm text-primary" />
-                    <span>Cargando detalle...</span>
+            <div className="sales-detail-body">
+              {cargandoDetalle ? (
+                <div className="d-flex align-items-center gap-2">
+                  <div className="spinner-border spinner-border-sm text-primary" />
+                  <span>Cargando detalle...</span>
+                </div>
+              ) : detalleVenta ? (
+                <>
+                  <div className="row g-3 mb-3">
+                    <div className="col-12 col-md-4">
+                      <div className="sales-detail-info-card">
+                        <span>
+                          <i className="bi bi-person me-1"></i>
+                          Cliente
+                        </span>
+
+                        <h6 className="fw-bold">
+                          {obtenerNombreCliente(detalleVenta.cliente)}
+                        </h6>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-md-4">
+                      <div className="sales-detail-info-card">
+                        <span>
+                          <i className="bi bi-person-badge me-1"></i>
+                          Vendedor
+                        </span>
+
+                        <h6 className="fw-bold">
+                          {obtenerNombreVendedor(detalleVenta.vendedor)}
+                        </h6>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-md-4">
+                      <div className="sales-detail-info-card">
+                        <span>
+                          <i className="bi bi-check-circle me-1"></i>
+                          Estado
+                        </span>
+
+                        <h6 className="fw-bold">{detalleVenta.estadoVenta}</h6>
+                      </div>
+                    </div>
                   </div>
-                ) : detalleVenta ? (
-                  <>
-                    <div className="row g-3 mb-3">
-                      <div className="col-12 col-md-4">
-                        <div className="border rounded p-3">
-                          <span className="text-muted small">
-                            <i className="bi bi-person me-1"></i>
-                            Cliente
-                          </span>
 
-                          <h6 className="fw-bold mb-0">
-                            {obtenerNombreCliente(detalleVenta)}
-                          </h6>
-                        </div>
-                      </div>
+                  <h6 className="fw-bold mb-2">
+                    <i className="bi bi-box-seam me-2 text-primary"></i>
+                    Productos vendidos
+                  </h6>
 
-                      <div className="col-12 col-md-4">
-                        <div className="border rounded p-3">
-                          <span className="text-muted small">
-                            <i className="bi bi-person-badge me-1"></i>
-                            Vendedor
-                          </span>
+                  <div className="table-responsive mb-4">
+                    <table className="table table-sm align-middle app-table">
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th className="text-end">Cantidad</th>
+                          <th className="text-end">Precio</th>
+                          <th className="text-end">Subtotal</th>
+                        </tr>
+                      </thead>
 
-                          <h6 className="fw-bold mb-0">
-                            {obtenerNombreVendedor(detalleVenta.vendedor)}
-                          </h6>
-                        </div>
-                      </div>
-
-                      <div className="col-12 col-md-4">
-                        <div className="border rounded p-3">
-                          <span className="text-muted small">
-                            <i className="bi bi-check-circle me-1"></i>
-                            Estado
-                          </span>
-
-                          <h6 className="fw-bold mb-0">
-                            {detalleVenta.estadoVenta}
-                          </h6>
-                        </div>
-                      </div>
-                    </div>
-
-                    <h6 className="fw-bold">
-                      <i className="bi bi-box-seam me-2 text-primary"></i>
-                      Productos vendidos
-                    </h6>
-
-                    <div className="table-responsive mb-3">
-                      <table className="table table-sm align-middle app-table">
-                        <thead>
+                      <tbody>
+                        {(detalleVenta.productos || []).length === 0 ? (
                           <tr>
-                            <th>Producto</th>
-                            <th className="text-end">Cantidad</th>
-                            <th className="text-end">Precio</th>
-                            <th className="text-end">Subtotal</th>
+                            <td colSpan="4" className="text-center text-muted">
+                              No hay productos registrados.
+                            </td>
                           </tr>
-                        </thead>
-
-                        <tbody>
-                          {(detalleVenta.productos || []).length === 0 ? (
-                            <tr>
-                              <td colSpan="4" className="text-center text-muted">
-                                No hay productos registrados.
-                              </td>
-                            </tr>
-                          ) : (
-                            (detalleVenta.productos || []).map(
-                              (producto, index) => (
-                                <tr key={index}>
-                                  <td>
-                                    {producto.nombreProducto ||
-                                      producto.nombre ||
-                                      producto.descripcion ||
-                                      'Producto'}
-                                  </td>
-
-                                  <td className="text-end">
-                                    {producto.cantidad}
-                                  </td>
-
-                                  <td className="text-end">
-                                    {formatearMoneda(
-                                      producto.precioUnitario || producto.precio
-                                    )}
-                                  </td>
-
-                                  <td className="text-end fw-bold">
-                                    {formatearMoneda(producto.subtotal)}
-                                  </td>
-                                </tr>
-                              )
-                            )
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <h6 className="fw-bold">
-                      <i className="bi bi-credit-card me-2 text-primary"></i>
-                      Pagos
-                    </h6>
-
-                    <div className="table-responsive mb-3">
-                      <table className="table table-sm align-middle app-table">
-                        <thead>
-                          <tr>
-                            <th>Método</th>
-                            <th className="text-end">Monto</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {(detalleVenta.pagos || []).length === 0 ? (
-                            <tr>
-                              <td colSpan="2" className="text-center text-muted">
-                                No hay pagos registrados.
-                              </td>
-                            </tr>
-                          ) : (
-                            (detalleVenta.pagos || []).map((pago, index) => (
+                        ) : (
+                          (detalleVenta.productos || []).map(
+                            (producto, index) => (
                               <tr key={index}>
-                                <td>
-                                  {pago.nombreMetodoPago ||
-                                    pago.metodoPago ||
-                                    pago.nombre ||
-                                    'Pago'}
+                                <td>{obtenerNombreProducto(producto)}</td>
+
+                                <td className="text-end">
+                                  {producto.cantidad}
+                                </td>
+
+                                <td className="text-end">
+                                  {formatearMoneda(
+                                    obtenerPrecioProducto(producto)
+                                  )}
                                 </td>
 
                                 <td className="text-end fw-bold">
-                                  {formatearMoneda(pago.monto)}
+                                  {formatearMoneda(
+                                    obtenerSubtotalProducto(producto)
+                                  )}
                                 </td>
                               </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                            )
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                    <div className="row justify-content-end">
-                      <div className="col-12 col-md-5">
-                        <div className="app-card p-3">
-                          <div className="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <strong>
-                              {formatearMoneda(detalleVenta.subtotalGeneral)}
-                            </strong>
-                          </div>
+                  <h6 className="fw-bold mb-2">
+                    <i className="bi bi-credit-card me-2 text-primary"></i>
+                    Pagos
+                  </h6>
 
-                          <div className="d-flex justify-content-between mb-2">
-                            <span>Total</span>
-                            <strong>
-                              {formatearMoneda(detalleVenta.total)}
-                            </strong>
-                          </div>
+                  <div className="table-responsive mb-4">
+                    <table className="table table-sm align-middle app-table">
+                      <thead>
+                        <tr>
+                          <th>Método</th>
+                          <th className="text-end">Monto</th>
+                        </tr>
+                      </thead>
 
-                          <div className="d-flex justify-content-between mb-2">
-                            <span>Monto pagado</span>
-                            <strong>
-                              {formatearMoneda(detalleVenta.montoPagadoTotal)}
-                            </strong>
-                          </div>
+                      <tbody>
+                        {(detalleVenta.pagos || []).length === 0 ? (
+                          <tr>
+                            <td colSpan="2" className="text-center text-muted">
+                              No hay pagos registrados.
+                            </td>
+                          </tr>
+                        ) : (
+                          (detalleVenta.pagos || []).map((pago, index) => (
+                            <tr key={index}>
+                              <td>{obtenerNombrePago(pago)}</td>
 
-                          <hr />
+                              <td className="text-end fw-bold">
+                                {formatearMoneda(pago.monto)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                          <div className="d-flex justify-content-between">
-                            <span>Cambio</span>
-                            <strong className="text-primary fs-5">
-                              {formatearMoneda(detalleVenta.cambio)}
-                            </strong>
-                          </div>
+                  <div className="row justify-content-end">
+                    <div className="col-12 col-md-5">
+                      <div className="sales-summary-box">
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Subtotal</span>
+                          <strong>
+                            {formatearMoneda(detalleVenta.subtotalGeneral)}
+                          </strong>
+                        </div>
+
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Total</span>
+                          <strong>{formatearMoneda(detalleVenta.total)}</strong>
+                        </div>
+
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Monto pagado</span>
+                          <strong>
+                            {formatearMoneda(detalleVenta.montoPagadoTotal)}
+                          </strong>
+                        </div>
+
+                        <hr />
+
+                        <div className="d-flex justify-content-between">
+                          <span>Cambio</span>
+                          <strong className="text-primary fs-6">
+                            {formatearMoneda(detalleVenta.cambio)}
+                          </strong>
                         </div>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <p>No se encontró información del detalle.</p>
-                )}
-              </div>
+                  </div>
+                </>
+              ) : (
+                <p>No se encontró información del detalle.</p>
+              )}
+            </div>
 
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={cerrarDetalle}
-                >
-                  <i className="bi bi-x-circle me-2"></i>
-                  Cerrar
-                </button>
-              </div>
+            <div className="sales-detail-footer">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={cerrarDetalle}
+              >
+                <i className="bi bi-x-circle me-2"></i>
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

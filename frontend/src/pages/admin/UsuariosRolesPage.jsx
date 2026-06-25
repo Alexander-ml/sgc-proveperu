@@ -12,6 +12,7 @@ import {
   activarUsuario,
   suspenderUsuario,
   cambiarPasswordUsuario,
+  listarHistorialAccesos,
 } from '../../services/usuarioService';
 
 import {
@@ -266,36 +267,8 @@ const UsuariosRolesPage = () => {
     estado: 'ACTIVO',
   });
 
-  const [historialAccesos] = useState([
-    {
-      fecha: '2026-05-06',
-      hora: '08:45',
-      usuario: 'César Medina',
-      accion: 'Inicio de sesión',
-      ip: '192.168.1.10',
-    },
-    {
-      fecha: '2026-05-06',
-      hora: '08:00',
-      usuario: 'Iris Arroyo',
-      accion: 'Inicio de sesión',
-      ip: '192.168.1.11',
-    },
-    {
-      fecha: '2026-05-06',
-      hora: '07:55',
-      usuario: 'Marco Hernández',
-      accion: 'Inicio de sesión',
-      ip: '192.168.1.15',
-    },
-    {
-      fecha: '2026-05-05',
-      hora: '14:45',
-      usuario: 'Iris Arroyo',
-      accion: 'Registró venta V-2026-003',
-      ip: '192.168.1.11',
-    },
-  ]);
+  const [historialAccesos, setHistorialAccesos] = useState([]);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
   const cargarDatos = async () => {
     try {
@@ -346,6 +319,21 @@ const UsuariosRolesPage = () => {
     cargarDatos();
   };
 
+  const cargarHistorialAccesos = async () => {
+    try {
+      setCargandoHistorial(true);
+
+      const response = await listarHistorialAccesos();
+
+      setHistorialAccesos(response.data || []);
+    } catch (error) {
+      console.error('Error cargando historial de accesos:', error);
+      alert('No se pudo cargar el historial de accesos');
+    } finally {
+      setCargandoHistorial(false);
+    }
+  };
+
   const obtenerIdUsuario = (usuario) => {
     return usuario.idUsuario || usuario.id || usuario.id_usuario;
   };
@@ -358,6 +346,29 @@ const UsuariosRolesPage = () => {
     }
 
     return `${partes[0][0] || ''}${partes[1][0] || ''}`.toUpperCase();
+  };
+
+  const formatearFecha = (fechaHora) => {
+    if (!fechaHora) return '-';
+
+    const fecha = new Date(fechaHora);
+
+    return fecha.toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const formatearHora = (fechaHora) => {
+    if (!fechaHora) return '-';
+
+    const fecha = new Date(fechaHora);
+
+    return fecha.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const obtenerNombreRolVisible = (rol) => {
@@ -716,7 +727,10 @@ const UsuariosRolesPage = () => {
             className={`app-tab-btn ${
               tabActivo === 'historial' ? 'active' : ''
             }`}
-            onClick={() => setTabActivo('historial')}
+            onClick={() => {
+              setTabActivo('historial');
+              cargarHistorialAccesos();
+            }}
           >
             <i className="bi bi-clock-history me-2"></i>
             Historial de Accesos
@@ -1050,56 +1064,116 @@ const UsuariosRolesPage = () => {
 
       {tabActivo === 'historial' && (
         <div className="app-card p-3">
-          <h6 className="fw-bold mb-1">
-            <i className="bi bi-clock-history me-2 text-primary"></i>
-            Historial de Accesos al Sistema
-          </h6>
+          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+              <h6 className="fw-bold mb-1">
+                <i className="bi bi-clock-history me-2 text-primary"></i>
+                Historial de Accesos al Sistema
+              </h6>
 
-          <p className="text-muted small mb-4">
-            Registro de inicio/cierre de sesión y acciones de usuarios.
-          </p>
+              <p className="text-muted small mb-0">
+                Registro de inicios y cierres de sesión realizados por los usuarios.
+              </p>
+            </div>
 
-          <div className="alert alert-warning">
-            <i className="bi bi-exclamation-triangle me-2"></i>
-            Vista temporal. Se conectará al endpoint real cuando esté
-            disponible.
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              onClick={cargarHistorialAccesos}
+            >
+              <i className="bi bi-arrow-clockwise me-1"></i>
+              Actualizar
+            </button>
           </div>
 
-          <div className="table-responsive">
-            <table className="table align-middle app-table">
-              <thead>
-                <tr>
-                  <th>Fecha y Hora</th>
-                  <th>Usuario</th>
-                  <th>Acción registrada</th>
-                  <th>IP de acceso</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {historialAccesos.map((item, index) => (
-                  <tr key={index}>
-                    <td>
-                      <strong>{item.fecha}</strong>
-                      <br />
-                      <span className="text-muted small">{item.hora}</span>
-                    </td>
-
-                    <td>
-                      <i className="bi bi-person-circle me-2 text-primary"></i>
-                      {item.usuario}
-                    </td>
-
-                    <td>{item.accion}</td>
-
-                    <td>
-                      <code>{item.ip}</code>
-                    </td>
+          {cargandoHistorial ? (
+            <div className="d-flex align-items-center gap-2 py-3">
+              <div className="spinner-border spinner-border-sm text-primary" />
+              <span>Cargando historial...</span>
+            </div>
+          ) : historialAccesos.length === 0 ? (
+            <div className="alert alert-info mb-0">
+              <i className="bi bi-info-circle me-2"></i>
+              No hay registros de acceso.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle app-table">
+                <thead>
+                  <tr>
+                    <th>ID Sesión</th>
+                    <th>Fecha y Hora</th>
+                    <th>Usuario</th>
+                    <th>Correo</th>
+                    <th>Acción registrada</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+
+                <tbody>
+                  {historialAccesos.map((item, index) => (
+                    <tr key={`${item.idSesion}-${item.fechaHora}-${index}`}>
+                      <td>
+                        <span className="badge bg-light text-dark border">
+                          #{item.idSesion}
+                        </span>
+                      </td>
+
+                      <td>
+                        <strong>{formatearFecha(item.fechaHora)}</strong>
+                        <br />
+                        <span className="text-muted small">
+                          {formatearHora(item.fechaHora)}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          <div
+                            className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {obtenerIniciales(item.usuario)}
+                          </div>
+
+                          <span>{item.usuario}</span>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span className="text-muted">
+                          <i className="bi bi-envelope me-1"></i>
+                          {item.usuarioLogin}
+                        </span>
+                      </td>
+
+                      <td>
+                        <span
+                          className={`badge app-badge ${
+                            item.accionRegistrada === 'Inicio de sesión'
+                              ? 'bg-success bg-opacity-10 text-success'
+                              : 'bg-secondary bg-opacity-10 text-secondary'
+                          }`}
+                        >
+                          <i
+                            className={`bi ${
+                              item.accionRegistrada === 'Inicio de sesión'
+                                ? 'bi-box-arrow-in-right'
+                                : 'bi-box-arrow-right'
+                            } me-1`}
+                          ></i>
+                          {item.accionRegistrada}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
