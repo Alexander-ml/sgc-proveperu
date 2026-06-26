@@ -26,6 +26,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import com.proveperu.m03_compras.dto.request.CambiarEstadoCompraRequest;
+import org.springframework.web.bind.annotation.PatchMapping;
+
 /**
  * Controlador REST encargado de exponer
  * los endpoints del módulo de compras.
@@ -233,6 +237,48 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
                 )
         );
     }
+/**
+ * Cambia el estado de una compra.
+ *
+ * Si el nuevo estado es RECIBIDO, se ejecuta el procedimiento almacenado
+ * que registra la recepción y actualiza el stock.
+ *
+ * @param idCompra identificador de la compra.
+ * @param request nuevo estado.
+ * @param authentication usuario autenticado.
+ * @return detalle actualizado de la compra.
+ */
+@Operation(
+        summary = "Cambiar estado de compra",
+        description = "Cambia el estado de una compra. Si cambia a RECIBIDO, registra la recepción y actualiza el stock mediante procedimiento almacenado."
+)
+@PatchMapping("/{idCompra}/estado")
+public ResponseEntity<ApiResponse<CompraDetalleResponse>>
+        cambiarEstadoCompra(
+                @PathVariable Integer idCompra,
+                @Valid @RequestBody CambiarEstadoCompraRequest request,
+                Authentication authentication
+        ) {
+
+    if (authentication == null
+            || "anonymousUser".equals(authentication.getName())) {
+        throw new RuntimeException("Debe iniciar sesión para cambiar el estado de una compra");
+    }
+
+    CompraDetalleResponse response =
+            compraService.cambiarEstadoCompra(
+                    idCompra,
+                    request,
+                    authentication.getName()
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Estado de compra actualizado correctamente"
+            )
+    );
+}
     /**
  * Obtiene el detalle completo de una compra seleccionada.
  *

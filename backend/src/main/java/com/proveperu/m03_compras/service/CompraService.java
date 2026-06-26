@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.proveperu.m02_inventario.entity.Producto;
 import com.proveperu.m02_inventario.repository.ProductoRepository;
+import com.proveperu.m03_compras.dto.request.CambiarEstadoCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarDetalleCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarProveedorRequest;
@@ -46,6 +47,10 @@ import com.proveperu.shared.enums.EstadoActivoInactivo;
 import com.proveperu.shared.enums.EstadoLogico;
 import com.proveperu.shared.repository.MetodoPagoRepository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.StoredProcedureQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 /**
@@ -69,7 +74,8 @@ private final DetalleCompraRepository detalleCompraRepository;
 private final PagoCompraRepository pagoCompraRepository;
 
 private final UsuarioRepository usuarioRepository;
-
+@PersistenceContext
+private EntityManager entityManager;
     /**
      * Obtiene los indicadores principales del módulo de compras.
      *
@@ -569,6 +575,100 @@ return CompraDetalleResponse.builder()
         .productos(productosResponse)
         .total(compra.getTotal())
         .build();
+}
+/**
+ * Cambia el estado de una compra.
+ *
+ * Si el nuevo estado es RECIBIDO, se ejecuta el procedimiento almacenado
+ * que registra la recepción y actualiza el stock desde la base de datos.
+ *
+ * @param idCompra identificador de la compra.
+ * @param request nuevo estado de la compra.
+ * @param usuarioLogin usuario autenticado que realiza el cambio.
+ * @return detalle actualizado de la compra.
+ */
+@Transactional
+public CompraDetalleResponse cambiarEstadoCompra(
+        Integer idCompra,
+        CambiarEstadoCompraRequest request,
+        String usuarioLogin
+) {
+
+    log.info(
+            "Cambiando estado de compra. IdCompra: {}, Nuevo estado: {}, Usuario: {}",
+            idCompra,
+            request.getEstado(),
+            usuarioLogin
+    );
+
+    Compra compra = compraRepository.findById(idCompra)
+            .orElseThrow(() ->
+                    new RuntimeException("Compra no encontrada")
+            );
+
+    if (compra.getEstadoLogico() != EstadoLogico.ACTIVO) {
+        throw new RuntimeException("La compra no se encuentra activa");
+    }
+
+    Usuario usuario = usuarioRepository.findByUsuarioLogin(usuarioLogin)
+            .orElseThrow(() ->
+                    new RuntimeException("Usuario autenticado no encontrado")
+            );
+
+    StoredProcedureQuery procedimiento =
+            entityManager.createStoredProcedureQuery(
+                    "sp_cambiar_estado_compra"
+            );
+
+    procedimiento.registerStoredProcedureParameter(
+            "p_id_compra",
+            Integer.class,
+            ParameterMode.IN
+    );
+
+    procedimiento.registerStoredProcedureParameter(
+            "p_nuevo_estado",
+            String.class,
+            ParameterMode.IN
+    );
+
+    procedimiento.registerStoredProcedureParameter(
+            "p_id_usuario",
+            Integer.class,
+            ParameterMode.IN
+    );
+
+    procedimiento.setParameter(
+            "p_id_compra",
+            idCompra
+    );
+
+    procedimiento.setParameter(
+            "p_nuevo_estado",
+            request.getEstado().name()
+    );
+
+    procedimiento.setParameter(
+            "p_id_usuario",
+            usuario.getIdUsuario()
+    );
+
+    procedimiento.execute();
+
+    /*
+     * Limpiamos el contexto porque el procedimiento actualiza la base directamente.
+     * Así evitamos devolver datos antiguos desde memoria.
+     */
+    entityManager.flush();
+    entityManager.clear();
+
+    log.info(
+            "Estado de compra actualizado correctamente. IdCompra: {}, Nuevo estado: {}",
+            idCompra,
+            request.getEstado()
+    );
+
+    return obtenerDetalleCompra(idCompra);
 }
 /**
  * Obtiene el detalle completo de una compra.
