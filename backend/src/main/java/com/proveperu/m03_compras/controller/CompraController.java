@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proveperu.m03_compras.dto.request.CambiarEstadoCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarCompraRequest;
 import com.proveperu.m03_compras.dto.request.RegistrarProveedorRequest;
 import com.proveperu.m03_compras.dto.response.CompraDashboardResponse;
@@ -26,14 +28,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import com.proveperu.m03_compras.dto.request.CambiarEstadoCompraRequest;
-import org.springframework.web.bind.annotation.PatchMapping;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Controlador REST encargado de exponer
  * los endpoints del módulo de compras.
  */
+@Slf4j
 @Tag(
         name = "Compras",
         description = "Gestión y consulta de compras a proveedores"
@@ -57,7 +58,7 @@ public class CompraController {
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<CompraDashboardResponse>>
             obtenerDashboard() {
-
+ log.info("Endpoint GET /api/compras/dashboard llamado");
         CompraDashboardResponse response =
                 compraService.obtenerDashboard();
 
@@ -80,7 +81,7 @@ public class CompraController {
 @GetMapping("/opciones")
 public ResponseEntity<ApiResponse<CompraOpcionesResponse>>
         obtenerOpcionesRegistro() {
-
+ log.info("Endpoint GET /api/compras/opciones llamado");
     CompraOpcionesResponse response =
             compraService.obtenerOpcionesRegistro();
 
@@ -103,6 +104,7 @@ public ResponseEntity<ApiResponse<CompraOpcionesResponse>>
 @GetMapping("/proveedores")
 public ResponseEntity<ApiResponse<List<ProveedorListadoResponse>>>
         listarProveedores() {
+   log.info("Endpoint GET /api/compras/proveedores llamado");
 
     List<ProveedorListadoResponse> response =
             compraService.listarProveedores();
@@ -130,7 +132,7 @@ public ResponseEntity<ApiResponse<ProveedorListadoResponse>>
         registrarProveedor(
                 @Valid @RequestBody RegistrarProveedorRequest request
         ) {
-
+  log.info("Endpoint POST /api/compras/proveedores llamado para registrar proveedor");
     ProveedorListadoResponse response =
             compraService.registrarProveedor(request);
 
@@ -156,7 +158,10 @@ public ResponseEntity<ApiResponse<List<CompraListadoResponse>>>
         listarComprasPorProveedor(
                 @PathVariable Integer idProveedor
         ) {
-
+  log.info(
+                "Endpoint GET /api/compras/proveedores/{}/compras llamado",
+                idProveedor
+        );
     List<CompraListadoResponse> response =
             compraService.listarComprasPorProveedor(idProveedor);
 
@@ -187,7 +192,7 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
                 @Valid @RequestBody RegistrarCompraRequest request,
                 Authentication authentication
         ) {
-
+ log.info("Endpoint POST /api/compras llamado para registrar compra");
     if (authentication == null
             || "anonymousUser".equals(authentication.getName())) {
 
@@ -195,7 +200,10 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
                 "Debe iniciar sesión para registrar una compra"
         );
     }
-
+   log.info(
+                "Registrando compra desde endpoint. Usuario autenticado: {}",
+                authentication.getName()
+        );
     CompraDetalleResponse response =
             compraService.registrarCompra(
                     request,
@@ -226,6 +234,12 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
                     @RequestParam(required = false) String buscar,
                     @RequestParam(required = false) String estado
             ) {
+
+        log.info(
+                "Endpoint GET /api/compras llamado. Buscar: {}, Estado: {}",
+                buscar,
+                estado
+        );
 
         List<CompraListadoResponse> response =
                 compraService.listarCompras(buscar, estado);
@@ -259,9 +273,17 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
                 @Valid @RequestBody CambiarEstadoCompraRequest request,
                 Authentication authentication
         ) {
-
+  log.info(
+                "Endpoint PATCH /api/compras/{}/estado llamado. Nuevo estado: {}",
+                idCompra,
+                request.getEstado()
+        );
     if (authentication == null
             || "anonymousUser".equals(authentication.getName())) {
+        log.warn(
+                    "Intento de cambiar estado de compra sin usuario autenticado. IdCompra: {}",
+                    idCompra
+            );
         throw new RuntimeException("Debe iniciar sesión para cambiar el estado de una compra");
     }
 
@@ -294,7 +316,10 @@ public ResponseEntity<ApiResponse<CompraDetalleResponse>>
         obtenerDetalleCompra(
                 @PathVariable Integer idCompra
         ) {
-
+  log.info(
+                "Endpoint GET /api/compras/{} llamado para obtener detalle de compra",
+                idCompra
+        );
     CompraDetalleResponse response =
             compraService.obtenerDetalleCompra(idCompra);
 
