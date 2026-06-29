@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 @Tag(
         name = "Roles",
         description = "Gestión de roles y permisos"
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 @SecurityRequirement(name = "bearerAuth")
 @RequestMapping("/api/roles")
 @RequiredArgsConstructor
+@Slf4j
 public class RolController {
       private final RolService rolService;
 
@@ -37,7 +39,7 @@ public class RolController {
     )
     @GetMapping
     public ResponseEntity<ApiResponse<List<RolListadoResponse>>> listarRoles() {
-
+log.info("Endpoint GET /api/roles llamado para listar roles");
         List<RolListadoResponse> response =
                 rolService.listarRoles();
 
@@ -57,7 +59,10 @@ public ResponseEntity<ApiResponse<RolDetalleResponse>>
 obtenerRolPorId(
         @PathVariable Integer id
 ) {
-
+ log.info(
+                "Endpoint GET /api/roles/{} llamado para obtener detalle de rol",
+                id
+        );
     RolDetalleResponse response =
             rolService.obtenerRolPorId(id);
 
@@ -78,7 +83,10 @@ actualizarPermisosRol(
         @PathVariable Integer id,
         @Valid @RequestBody ActualizarPermisosRolRequest request
 ) {
-
+ log.info(
+                "Endpoint PATCH /api/roles/{}/permisos llamado para actualizar permisos",
+                id
+        );
     rolService.actualizarPermisosRol(id, request);
 
     return ResponseEntity.ok(
