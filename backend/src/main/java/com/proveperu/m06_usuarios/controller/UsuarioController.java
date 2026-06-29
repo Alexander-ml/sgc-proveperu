@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 /**
  * Controlador REST encargado de gestionar las operaciones
  * relacionadas con usuarios y roles dentro del sistema.
@@ -45,6 +46,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
+@Slf4j
 public class UsuarioController {
     /**
      * Servicio encargado de ejecutar la lógica de negocio
@@ -64,7 +66,7 @@ public class UsuarioController {
     )
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<UsuarioDashboardResponse>> obtenerDashboard() {
-
+  log.info("Endpoint GET /api/usuarios/dashboard llamado");
         UsuarioDashboardResponse response =
                 usuarioService.obtenerDashboard();
 
@@ -91,6 +93,10 @@ public class UsuarioController {
     public ResponseEntity<ApiResponse<List<UsuarioListadoResponse>>> listarUsuarios(
             @RequestParam(required = false) String nombre
     ) {
+  log.info(
+                "Endpoint GET /api/usuarios llamado. Filtro nombre: {}",
+                nombre
+        );
 
         List<UsuarioListadoResponse> response =
                 usuarioService.listarUsuarios(nombre);
@@ -112,7 +118,7 @@ public class UsuarioController {
     public ResponseEntity<ApiResponse<String>> crearUsuario(
             @Valid @RequestBody CrearUsuarioRequest request
     ) {
-
+    log.info("Endpoint POST /api/usuarios llamado para crear usuario");
         usuarioService.crearUsuario(request);
 
         return ResponseEntity.ok(
@@ -134,7 +140,10 @@ public class UsuarioController {
             @PathVariable Integer id,
             @Valid @RequestBody EditarUsuarioRequest request
     ) {
-
+  log.info(
+                "Endpoint PUT /api/usuarios/{} llamado para editar usuario",
+                id
+        );
         usuarioService.editarUsuario(id, request);
 
         return ResponseEntity.ok(
@@ -155,7 +164,10 @@ public class UsuarioController {
     obtenerUsuarioPorId(
             @PathVariable Integer id
     ) {
-
+  log.info(
+                "Endpoint GET /api/usuarios/{} llamado para obtener detalle de usuario",
+                id
+        );
         UsuarioDetalleResponse response =
                 usuarioService.obtenerUsuarioPorId(id);
 
@@ -178,7 +190,10 @@ public class UsuarioController {
     suspenderUsuario(
             @PathVariable Integer id
     ) {
-
+   log.info(
+                "Endpoint PATCH /api/usuarios/{}/suspender llamado",
+                id
+        );
         usuarioService.suspenderUsuario(id);
 
         return ResponseEntity.ok(
@@ -199,7 +214,10 @@ public class UsuarioController {
     activarUsuario(
             @PathVariable Integer id
     ) {
-
+  log.info(
+                "Endpoint PATCH /api/usuarios/{}/activar llamado",
+                id
+        );
         usuarioService.activarUsuario(id);
 
         return ResponseEntity.ok(
@@ -233,7 +251,10 @@ cambiarPassword(
         @PathVariable Integer id,
         @Valid @RequestBody CambiarPasswordRequest request
 ) {
-
+  log.info(
+                "Endpoint PATCH /api/usuarios/{}/password llamado para cambiar contraseña",
+                id
+        );
     usuarioService.cambiarPassword(id, request);
 
     return ResponseEntity.ok(

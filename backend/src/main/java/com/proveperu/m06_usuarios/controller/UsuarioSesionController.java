@@ -14,7 +14,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Tag(
         name = "Historial de accesos",
         description = "Consulta de los accesos realizados por los usuarios"
@@ -36,6 +37,7 @@ public class UsuarioSesionController {
     @GetMapping("/historial-accesos")
     public ResponseEntity<ApiResponse<List<HistorialAccesoResponse>>>
             listarHistorialAccesos() {
+log.info("Endpoint GET /api/usuarios/historial-accesos llamado");
 
         List<HistorialAccesoResponse> historial =
                 usuarioSesionService.listarHistorialAccesos();
