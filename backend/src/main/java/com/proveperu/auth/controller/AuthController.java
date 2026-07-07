@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Controlador REST encargado de gestionar los procesos de autenticación
@@ -35,6 +36,7 @@ import lombok.RequiredArgsConstructor;
  *
  * @author Alexander
  */
+@Slf4j
 @Tag(
         name = "Autenticación",
         description = "Gestión de autenticación y generación de tokens JWT"
@@ -72,7 +74,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<  ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request) {
-
+ log.info(
+                "Endpoint POST /api/auth/login llamado para iniciar sesión. Usuario: {}",
+                request.getUsuarioLogin()
+        );
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok(
@@ -94,7 +99,7 @@ public class AuthController {
 public ResponseEntity<ApiResponse<Void>> logout(
         Authentication authentication
 ) {
-
+  log.info("Endpoint POST /api/auth/logout llamado");
     if (authentication == null
             || "anonymousUser".equals(authentication.getName())) {
 

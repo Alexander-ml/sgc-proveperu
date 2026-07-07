@@ -359,3 +359,4 @@ CREATE TABLE movimiento_caja (
     estado_fisico VARCHAR(20) NOT NULL DEFAULT 'REGISTRADO'
         CHECK (estado_fisico IN ('REGISTRADO','ANULADO'))
 );
+

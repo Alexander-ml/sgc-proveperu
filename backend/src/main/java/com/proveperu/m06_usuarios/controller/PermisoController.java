@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Tag(
         name = "Permisos",
         description = "Gestión de permisos del sistema"
@@ -32,7 +34,7 @@ public class PermisoController {
     )
     @GetMapping
     public ResponseEntity<ApiResponse<List<PermisoListadoResponse>>> listarPermisos() {
-
+        log.info("Endpoint GET /api/permisos llamado para listar permisos");
         return ResponseEntity.ok(
                 ApiResponse.success(
                         permisoService.listarPermisos(),

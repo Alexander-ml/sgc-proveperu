@@ -43,3 +43,8 @@ export const cambiarPasswordUsuario = async (id, nuevaPassword) => {
   });
   return response.data;
 };
+
+export const listarHistorialAccesos = async () => {
+  const response = await axiosInstance.get('/usuarios/historial-accesos');
+  return response.data;
+};
