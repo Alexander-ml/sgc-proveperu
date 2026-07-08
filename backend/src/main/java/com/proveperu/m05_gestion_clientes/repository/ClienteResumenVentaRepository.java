@@ -1,10 +1,11 @@
 package com.proveperu.m05_gestion_clientes.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.proveperu.m05_gestion_clientes.entity.ClienteResumenVenta;
-
 /**
  * Repositorio de consulta para las estadísticas de ventas por cliente.
  *
@@ -14,6 +15,17 @@ import com.proveperu.m05_gestion_clientes.entity.ClienteResumenVenta;
 @Repository
 public interface ClienteResumenVentaRepository
         extends JpaRepository<ClienteResumenVenta, Integer> {
+     /**
+     * Cuenta clientes frecuentes según la cantidad mínima de compras.
+     */  
 
     long countByNumeroComprasGreaterThanEqual(Long minimoCompras);
+
+      /**
+     * Obtiene únicamente clientes que tengan compras,
+     * ordenados desde la compra más reciente.
+     */
+    List<ClienteResumenVenta>findByNumeroComprasGreaterThanOrderByUltimaCompraDesc(
+                    Long numeroCompras
+            );
 }

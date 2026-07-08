@@ -10,20 +10,27 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.proveperu.m05_gestion_clientes.dto.request.EditarClienteRequest;
 import com.proveperu.m05_gestion_clientes.dto.request.RegistrarClienteRequest;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteDashboardResponse;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteDetalleResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ClienteHistorialDetalleResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ClienteHistorialListadoResponse;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteListadoResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.CompraHistorialResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ProductoHistorialCompraResponse;
 import com.proveperu.m05_gestion_clientes.entity.Cliente;
+import com.proveperu.m05_gestion_clientes.entity.ClienteHistorialCompra;
+import com.proveperu.m05_gestion_clientes.entity.ClienteHistorialProducto;
 import com.proveperu.m05_gestion_clientes.entity.ClienteResumenVenta;
 import com.proveperu.m05_gestion_clientes.enums.TipoCliente;
+import com.proveperu.m05_gestion_clientes.repository.ClienteHistorialCompraRepository;
+import com.proveperu.m05_gestion_clientes.repository.ClienteHistorialProductoRepository;
 import com.proveperu.m05_gestion_clientes.repository.ClienteRepository;
 import com.proveperu.m05_gestion_clientes.repository.ClienteResumenVentaRepository;
 import com.proveperu.shared.enums.EstadoActivoInactivo;
 import com.proveperu.shared.enums.EstadoLogico;
 
-
-import com.proveperu.m05_gestion_clientes.dto.request.EditarClienteRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 /**
@@ -42,6 +49,8 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final ClienteResumenVentaRepository clienteResumenVentaRepository;
+    private final ClienteHistorialCompraRepository clienteHistorialCompraRepository;
+    private final ClienteHistorialProductoRepository clienteHistorialProductoRepository;
 
     /**
      * Obtiene los indicadores principales del módulo de clientes.
@@ -531,6 +540,227 @@ public ClienteDetalleResponse activarCliente(
         return clientes;
         }
 
+        /**
+ * Lista los clientes que poseen al menos una compra registrada.
+ *
+ * Si se proporciona un texto de búsqueda, filtra por nombre,
+ * razón social, DNI o RUC.
+ *
+ * @param buscar texto opcional de búsqueda.
+ * @return clientes que cuentan con historial de compras.
+ */
+@Transactional(readOnly = true)
+public List<ClienteHistorialListadoResponse>
+        listarClientesConHistorial(
+                String buscar
+        ) {
+
+    log.info(
+            "Listando clientes con historial. Buscar: {}",
+            buscar
+    );
+
+    List<ClienteResumenVenta> resumenes =
+            clienteResumenVentaRepository
+                    .findByNumeroComprasGreaterThanOrderByUltimaCompraDesc(
+                            0L
+                    );
+
+    if (resumenes.isEmpty()) {
+        log.info(
+                "No existen clientes con historial de compras"
+        );
+
+        return List.of();
+    }
+
+    List<Integer> idsClientes =
+            resumenes.stream()
+                    .map(
+                            ClienteResumenVenta::getIdCliente
+                    )
+                    .collect(Collectors.toList());
+
+    Map<Integer, Cliente> clientesPorId =
+            clienteRepository.findAllById(idsClientes)
+                    .stream()
+                    .collect(
+                            Collectors.toMap(
+                                    Cliente::getIdCliente,
+                                    cliente -> cliente
+                            )
+                    );
+
+    List<ClienteHistorialListadoResponse> clientes =
+            resumenes.stream()
+                    .filter(resumen -> {
+
+                        Cliente cliente =
+                                clientesPorId.get(
+                                        resumen.getIdCliente()
+                                );
+
+                        return cliente != null
+                                && coincideBusqueda(
+                                        cliente,
+                                        buscar
+                                );
+                    })
+                    .map(resumen -> {
+
+                        Cliente cliente =
+                                clientesPorId.get(
+                                        resumen.getIdCliente()
+                                );
+
+                        String nombreCliente =
+                                obtenerNombreCliente(cliente);
+
+                        return ClienteHistorialListadoResponse
+                                .builder()
+                                .idCliente(
+                                        cliente.getIdCliente()
+                                )
+                                .nombreCliente(nombreCliente)
+                                .iniciales(
+                                        generarIniciales(
+                                                nombreCliente
+                                        )
+                                )
+                                .numeroCompras(
+                                        obtenerNumeroCompras(
+                                                resumen
+                                        )
+                                )
+                                .montoTotal(
+                                        obtenerMontoTotal(
+                                                resumen
+                                        )
+                                )
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+    log.info(
+            "Clientes con historial listados correctamente. Total: {}",
+            clientes.size()
+    );
+
+    return clientes;
+}
+
+/**
+ * Obtiene el historial completo de compras de un cliente.
+ *
+ * Incluye información del cliente, indicadores generales,
+ * ventas realizadas y productos incluidos en cada venta.
+ *
+ * @param idCliente identificador del cliente.
+ * @return historial completo de compras.
+ */
+@Transactional(readOnly = true)
+public ClienteHistorialDetalleResponse obtenerHistorialCompras(
+        Integer idCliente
+) {
+
+    log.info(
+            "Obteniendo historial de compras. IdCliente: {}",
+            idCliente
+    );
+
+    Cliente cliente = clienteRepository.findById(idCliente)
+            .orElseThrow(() ->
+                    new RuntimeException("Cliente no encontrado")
+            );
+
+    if (cliente.getEstadoLogico() != EstadoLogico.ACTIVO) {
+        throw new RuntimeException(
+                "El cliente no se encuentra disponible"
+        );
+    }
+
+    ClienteResumenVenta resumen =
+            clienteResumenVentaRepository.findById(idCliente)
+                    .orElse(null);
+
+    List<ClienteHistorialCompra> compras =
+            clienteHistorialCompraRepository
+                    .findByIdClienteOrderByFechaHoraVentaDesc(
+                            idCliente
+                    );
+
+    List<Integer> idsVentas =
+            compras.stream()
+                    .map(
+                            ClienteHistorialCompra::getIdVenta
+                    )
+                    .collect(Collectors.toList());
+
+    List<ClienteHistorialProducto> productos = idsVentas.isEmpty()
+            ? List.of()
+            : clienteHistorialProductoRepository
+                    .findByIdVentaIn(idsVentas);
+
+    Map<Integer, List<ClienteHistorialProducto>>
+            productosPorVenta =
+                    productos.stream()
+                            .collect(
+                                    Collectors.groupingBy(
+                                            ClienteHistorialProducto::getIdVenta
+                                    )
+                            );
+
+    List<CompraHistorialResponse> comprasResponse =
+            compras.stream()
+                    .map(compra ->
+                            mapearCompraHistorial(
+                                    compra,
+                                    productosPorVenta.getOrDefault(
+                                            compra.getIdVenta(),
+                                            List.of()
+                                    )
+                            )
+                    )
+                    .collect(Collectors.toList());
+
+    String nombreCliente =
+            obtenerNombreCliente(cliente);
+
+    ClienteHistorialDetalleResponse response =
+            ClienteHistorialDetalleResponse.builder()
+                    .idCliente(cliente.getIdCliente())
+                    .nombreCliente(nombreCliente)
+                    .iniciales(
+                            generarIniciales(nombreCliente)
+                    )
+                    .tipoDocumento(
+                            obtenerTipoDocumento(cliente)
+                    )
+                    .numeroDocumento(
+                            obtenerNumeroDocumento(cliente)
+                    )
+                    .numeroCompras(
+                            obtenerNumeroCompras(resumen)
+                    )
+                    .montoTotal(
+                            obtenerMontoTotal(resumen)
+                    )
+                    .ticketPromedio(
+                            obtenerTicketPromedio(resumen)
+                    )
+                    .compras(comprasResponse)
+                    .build();
+
+    log.info(
+            "Historial de compras obtenido correctamente. "
+                    + "IdCliente: {}, compras: {}",
+            idCliente,
+            comprasResponse.size()
+    );
+
+    return response;
+}
+
     /**
      * Obtiene el detalle completo de un cliente.
      *
@@ -650,6 +880,51 @@ public ClienteDetalleResponse activarCliente(
                 )
                 .build();
     }
+
+    /**
+ * Convierte una compra del historial y sus productos
+ * en el DTO correspondiente.
+ */
+private CompraHistorialResponse mapearCompraHistorial(
+        ClienteHistorialCompra compra,
+        List<ClienteHistorialProducto> productos
+) {
+
+    List<ProductoHistorialCompraResponse> productosResponse =
+            productos.stream()
+                    .map(producto ->
+                            ProductoHistorialCompraResponse.builder()
+                                    .idProducto(
+                                            producto.getIdProducto()
+                                    )
+                                    .nombreProducto(
+                                            producto.getNombreProducto()
+                                    )
+                                    .cantidad(
+                                            producto.getCantidad()
+                                    )
+                                    .subtotal(
+                                            producto.getSubtotal()
+                                    )
+                                    .build()
+                    )
+                    .collect(Collectors.toList());
+
+    return CompraHistorialResponse.builder()
+            .idVenta(compra.getIdVenta())
+            .codigoVenta(compra.getCodigoVenta())
+            .fechaHoraVenta(compra.getFechaHoraVenta())
+            .estadoVenta(compra.getEstadoVenta())
+            .total(compra.getTotal())
+            .metodoPago(compra.getMetodoPago())
+            .tipoComprobante(compra.getTipoComprobante())
+            .numeroComprobante(
+                    compra.getNumeroComprobante()
+            )
+            .atendidoPor(compra.getAtendidoPor())
+            .productos(productosResponse)
+            .build();
+}
 
     /**
      * Obtiene la cantidad de compras del resumen.

@@ -4,16 +4,21 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proveperu.m05_gestion_clientes.dto.request.EditarClienteRequest;
 import com.proveperu.m05_gestion_clientes.dto.request.RegistrarClienteRequest;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteDashboardResponse;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteDetalleResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ClienteHistorialDetalleResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ClienteHistorialListadoResponse;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteListadoResponse;
 import com.proveperu.m05_gestion_clientes.service.ClienteService;
 import com.proveperu.shared.dto.response.ApiResponse;
@@ -24,12 +29,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.web.bind.annotation.PatchMapping;
-
-import org.springframework.web.bind.annotation.PutMapping;
-
-import com.proveperu.m05_gestion_clientes.dto.request.EditarClienteRequest;
 /**
  * Controlador REST para el módulo de gestión de clientes.
  */
@@ -231,6 +230,88 @@ public ResponseEntity<ApiResponse<ClienteDetalleResponse>>
                 )
         );
     }
+
+/**
+ * Lista los clientes que poseen historial de compras.
+ *
+ * Al no enviar un texto de búsqueda, devuelve todos los clientes
+ * que tengan al menos una venta registrada.
+ *
+ * @param buscar texto opcional para buscar por nombre, razón social,
+ *               DNI o RUC.
+ * @return clientes con historial de compras.
+ */
+@Operation(
+        summary = "Listar clientes con historial",
+        description = "Obtiene los clientes que tienen al menos una compra registrada. "
+                + "Permite buscar por nombre, razón social, DNI o RUC."
+)
+@GetMapping("/historial")
+public ResponseEntity<
+        ApiResponse<List<ClienteHistorialListadoResponse>>>
+        listarClientesConHistorial(
+                @RequestParam(
+                        required = false
+                ) String buscar
+        ) {
+
+    log.info(
+            "Endpoint GET /api/clientes/historial llamado. Buscar: {}",
+            buscar
+    );
+
+    List<ClienteHistorialListadoResponse> response =
+            clienteService.listarClientesConHistorial(
+                    buscar
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Clientes con historial obtenidos correctamente"
+            )
+    );
+}
+
+/**
+ * Obtiene el historial completo de compras de un cliente.
+ *
+ * Incluye sus indicadores generales, ventas registradas
+ * y productos incluidos en cada venta.
+ *
+ * @param idCliente identificador del cliente.
+ * @return historial completo de compras.
+ */
+@Operation(
+        summary = "Obtener historial de compras de un cliente",
+        description = "Obtiene los datos del cliente, sus indicadores "
+                + "y todas sus compras registradas con sus productos."
+)
+@GetMapping("/{idCliente}/historial-compras")
+public ResponseEntity<ApiResponse<ClienteHistorialDetalleResponse>>
+        obtenerHistorialCompras(
+                @PathVariable Integer idCliente
+        ) {
+
+    log.info(
+            "Endpoint GET /api/clientes/{}/historial-compras llamado",
+            idCliente
+    );
+
+    ClienteHistorialDetalleResponse response =
+            clienteService.obtenerHistorialCompras(
+                    idCliente
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Historial de compras obtenido correctamente"
+            )
+    );
+}
+
+
     /**
  * Obtiene el detalle completo de un cliente.
  *
