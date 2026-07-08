@@ -4,11 +4,16 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proveperu.m05_gestion_clientes.dto.request.RegistrarClienteRequest;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteDashboardResponse;
+import com.proveperu.m05_gestion_clientes.dto.response.ClienteDetalleResponse;
 import com.proveperu.m05_gestion_clientes.dto.response.ClienteListadoResponse;
 import com.proveperu.m05_gestion_clientes.service.ClienteService;
 import com.proveperu.shared.dto.response.ApiResponse;
@@ -16,18 +21,22 @@ import com.proveperu.shared.dto.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 
-import com.proveperu.m05_gestion_clientes.dto.response.ClienteDetalleResponse;
+import org.springframework.web.bind.annotation.PutMapping;
 
+import com.proveperu.m05_gestion_clientes.dto.request.EditarClienteRequest;
 /**
  * Controlador REST para el módulo de gestión de clientes.
  */
 @RestController
 @RequestMapping("/api/clientes")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(
         name = "Gestión de Clientes",
         description = "Endpoints para administrar clientes, indicadores e historial de compras."
@@ -61,6 +70,139 @@ public class ClienteController {
         );
     }
 
+    /**
+ * Registra un nuevo cliente en el sistema.
+ *
+ * @param request datos del cliente.
+ * @return detalle del cliente registrado.
+ */
+@Operation(
+        summary = "Registrar cliente",
+        description = "Registra una persona natural con DNI o una empresa con RUC."
+)
+@PostMapping
+public ResponseEntity<ApiResponse<ClienteDetalleResponse>>
+        registrarCliente(
+                @Valid @RequestBody RegistrarClienteRequest request
+        ) {
+
+    log.info(
+            "Endpoint POST /api/clientes llamado. Tipo de cliente: {}",
+            request.getTipoCliente()
+    );
+
+    ClienteDetalleResponse response =
+            clienteService.registrarCliente(request);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Cliente registrado correctamente"
+            )
+    );
+}
+
+/**
+ * Edita los datos de un cliente existente.
+ *
+ * @param idCliente identificador del cliente.
+ * @param request nuevos datos del cliente.
+ * @return detalle actualizado del cliente.
+ */
+@Operation(
+        summary = "Editar cliente",
+        description = "Actualiza los datos de una persona natural o empresa."
+)
+@PutMapping("/{idCliente}")
+public ResponseEntity<ApiResponse<ClienteDetalleResponse>>
+        editarCliente(
+                @PathVariable Integer idCliente,
+                @Valid @RequestBody EditarClienteRequest request
+        ) {
+
+    log.info(
+            "Endpoint PUT /api/clientes/{} llamado. Tipo de cliente: {}",
+            idCliente,
+            request.getTipoCliente()
+    );
+
+    ClienteDetalleResponse response =
+            clienteService.editarCliente(
+                    idCliente,
+                    request
+            );
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Cliente actualizado correctamente"
+            )
+    );
+}
+
+/**
+ * Desactiva un cliente sin eliminar su información.
+ *
+ * @param idCliente identificador del cliente.
+ * @return detalle del cliente desactivado.
+ */
+@Operation(
+        summary = "Desactivar cliente",
+        description = "Cambia el estado físico del cliente a INACTIVO."
+)
+@PatchMapping("/{idCliente}/desactivar")
+public ResponseEntity<ApiResponse<ClienteDetalleResponse>>
+        desactivarCliente(
+                @PathVariable Integer idCliente
+        ) {
+
+    log.info(
+            "Endpoint PATCH /api/clientes/{}/desactivar llamado",
+            idCliente
+    );
+
+    ClienteDetalleResponse response =
+            clienteService.desactivarCliente(idCliente);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Cliente desactivado correctamente"
+            )
+    );
+}
+
+/**
+ * Activa nuevamente un cliente desactivado.
+ *
+ * @param idCliente identificador del cliente.
+ * @return detalle del cliente activado.
+ */
+@Operation(
+        summary = "Activar cliente",
+        description = "Cambia el estado físico del cliente a ACTIVO."
+)
+@PatchMapping("/{idCliente}/activar")
+public ResponseEntity<ApiResponse<ClienteDetalleResponse>>
+        activarCliente(
+                @PathVariable Integer idCliente
+        ) {
+
+    log.info(
+            "Endpoint PATCH /api/clientes/{}/activar llamado",
+            idCliente
+    );
+
+    ClienteDetalleResponse response =
+            clienteService.activarCliente(idCliente);
+
+    return ResponseEntity.ok(
+            ApiResponse.success(
+                    response,
+                    "Cliente activado correctamente"
+            )
+    );
+}
     /**
      * Lista clientes con búsqueda y filtro por tipo.
      *
