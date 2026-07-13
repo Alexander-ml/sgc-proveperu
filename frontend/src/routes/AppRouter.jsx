@@ -9,6 +9,8 @@ import InventarioPage from '../pages/inventario/InventarioPage';
 import ComprasPage from '../pages/compras/ComprasPage';
 import CajaPage from '../pages/caja/CajaPage';
 import ClientesPage from '../pages/clientes/ClientesPage';
+import ReportesPage from '../pages/reportes/ReportesPage';
+import HistorialComprasPage from '../pages/clientes/HistorialComprasPage';
 
 function AppRouter() {
   return (
@@ -69,7 +71,7 @@ function AppRouter() {
           path="/reportes"
           element={
             <RoleRoute allowedRoles={['ADMIN']}>
-              <HomePage />
+              <ReportesPage />
             </RoleRoute>
           }
         />
@@ -87,7 +89,7 @@ function AppRouter() {
           path="/historial-compras"
           element={
             <RoleRoute allowedRoles={['ADMIN', 'VENDEDOR']}>
-              <HomePage />
+              <HistorialComprasPage />
             </RoleRoute>
           }
         />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MainLayout from '../../componentes/layout/MainLayout';
 import SummaryCard from '../../componentes/ui/SummaryCard';
 import BadgeStatus from '../../componentes/ui/BadgeStatus';
@@ -7,7 +7,20 @@ import {
   obtenerResumenClientes,
   listarClientes,
   crearCliente,
+  editarCliente,
+  activarCliente,
+  desactivarCliente,
+  obtenerClientePorId,
+  obtenerHistorialComprasCliente,
 } from '../../services/clienteService';
+
+const crearFormularioVacio = () => ({
+  tipoCliente: 'EMPRESA',
+  nombreCliente: '',
+  numeroDocumento: '',
+  telefono: '',
+  direccion: '',
+});
 
 const ClientesPage = () => {
   const [resumen, setResumen] = useState(null);
@@ -15,20 +28,31 @@ const ClientesPage = () => {
 
   const [busqueda, setBusqueda] = useState('');
   const [tipoCliente, setTipoCliente] = useState('');
-  const [vista, setVista] = useState('tarjetas');
-
-  const [cargando, setCargando] = useState(true);
-  const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
-
-  const [nuevoCliente, setNuevoCliente] = useState({
-    nombre: '',
-    tipoCliente: 'EMPRESA',
-    tipoDocumento: 'RUC',
-    numeroDocumento: '',
-    telefono: '',
-    correo: '',
-    direccion: '',
+  const [filtros, setFiltros] = useState({
+    busqueda: '',
+    tipoCliente: '',
   });
+
+  const [vista, setVista] = useState('tarjetas');
+  const [cargando, setCargando] = useState(true);
+  const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState('');
+
+  const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
+  const [mostrarDetalle, setMostrarDetalle] = useState(false);
+  const [mostrarHistorial, setMostrarHistorial] = useState(false);
+
+  const [guardando, setGuardando] = useState(false);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [historialCliente, setHistorialCliente] = useState(null);
+
+  const [formularioCliente, setFormularioCliente] = useState(
+    crearFormularioVacio()
+  );
 
   const formatearMoneda = (valor) => {
     const numero = Number(valor || 0);
@@ -39,20 +63,61 @@ const ClientesPage = () => {
     })}`;
   };
 
-  const obtenerIniciales = (nombre = '') => {
+  const formatearFecha = (fecha) => {
+    if (!fecha) return '-';
+
+    return new Date(fecha).toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const formatearHora = (fecha) => {
+    if (!fecha) return '';
+
+    return new Date(fecha).toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const extraerMensajeError = (err, fallback) => {
+    return err?.response?.data?.message || fallback;
+  };
+
+  const obtenerNombreCliente = (cliente) => {
+    return cliente?.nombreCliente || cliente?.nombre || 'Cliente sin nombre';
+  };
+
+  const obtenerIniciales = (cliente) => {
+    if (cliente?.iniciales) return cliente.iniciales;
+
+    const nombre = obtenerNombreCliente(cliente);
     const partes = nombre.trim().split(' ');
 
     if (partes.length === 1) {
-      return partes[0].substring(0, 2).toUpperCase();
+      return partes[0].slice(0, 2).toUpperCase();
     }
 
-    return `${partes[0][0] || ''}${partes[1][0] || ''}`.toUpperCase();
+    return `${partes[0]?.[0] || ''}${partes[1]?.[0] || ''}`.toUpperCase();
   };
 
   const obtenerTipoTexto = (tipo) => {
     if (tipo === 'EMPRESA') return 'Empresa';
     if (tipo === 'PERSONA') return 'Persona';
     return tipo || '-';
+  };
+
+  const obtenerDocumentoTexto = (cliente) => {
+    const tipoDocumento =
+      cliente?.tipoDocumento || (cliente?.tipoCliente === 'EMPRESA' ? 'RUC' : 'DNI');
+
+    return `${tipoDocumento}: ${cliente?.numeroDocumento || '-'}`;
+  };
+
+  const obtenerEstadoVariant = (estado) => {
+    return estado === 'INACTIVO' ? 'secondary' : 'success';
   };
 
   const obtenerTipoBadge = (tipo) => {
@@ -63,78 +128,249 @@ const ClientesPage = () => {
     return 'bg-purple bg-opacity-10 text-purple border border-purple border-opacity-25';
   };
 
-  const cargarDatos = async () => {
-    try {
-      setCargando(true);
+  const esFrecuente = (cliente) => Number(cliente?.numeroCompras || 0) > 10;
 
-      const resumenResponse = await obtenerResumenClientes();
-      const clientesResponse = await listarClientes({
-        busqueda,
-        tipoCliente,
-      });
+  const cargarDatos = useCallback(
+    async (mostrarIndicador = true) => {
+      try {
+        if (mostrarIndicador) setCargando(true);
 
-      setResumen(resumenResponse.data);
-      setClientes(clientesResponse.data || []);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-      alert('No se pudo cargar clientes');
-    } finally {
-      setCargando(false);
-    }
-  };
+        setError('');
+
+        const [resumenResponse, clientesResponse] = await Promise.all([
+          obtenerResumenClientes(),
+          listarClientes({
+            busqueda: filtros.busqueda,
+            tipoCliente: filtros.tipoCliente,
+          }),
+        ]);
+
+        setResumen(resumenResponse.data);
+        setClientes(clientesResponse.data || []);
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+        setError(extraerMensajeError(err, 'No se pudo cargar clientes.'));
+        setClientes([]);
+      } finally {
+        if (mostrarIndicador) setCargando(false);
+      }
+    },
+    [filtros]
+  );
 
   useEffect(() => {
-    cargarDatos();
-  }, [tipoCliente]);
+    cargarDatos(true);
+  }, [cargarDatos]);
 
   const buscarClientes = (e) => {
     e.preventDefault();
-    cargarDatos();
+
+    setFiltros({
+      busqueda: busqueda.trim(),
+      tipoCliente,
+    });
   };
 
-  const handleChangeCrear = (e) => {
+  const handleChangeFormulario = (e) => {
     const { name, value } = e.target;
 
-    let cambios = {
-      ...nuevoCliente,
+    setFormularioCliente((actual) => ({
+      ...actual,
       [name]: value,
-    };
+    }));
+  };
 
-    if (name === 'tipoCliente') {
-      cambios = {
-        ...cambios,
-        tipoDocumento: value === 'EMPRESA' ? 'RUC' : 'DNI',
-      };
-    }
-
-    setNuevoCliente(cambios);
+  const abrirModalCrear = () => {
+    setFormularioCliente(crearFormularioVacio());
+    setMostrarModalCrear(true);
   };
 
   const cerrarModalCrear = () => {
     setMostrarModalCrear(false);
-
-    setNuevoCliente({
-      nombre: '',
-      tipoCliente: 'EMPRESA',
-      tipoDocumento: 'RUC',
-      numeroDocumento: '',
-      telefono: '',
-      correo: '',
-      direccion: '',
-    });
+    setFormularioCliente(crearFormularioVacio());
   };
+
+  const abrirModalEditar = async (idCliente) => {
+    try {
+      setCargandoDetalle(true);
+
+      const response = await obtenerClientePorId(idCliente);
+      const cliente = response.data;
+
+      setClienteSeleccionado(cliente);
+      setFormularioCliente({
+        tipoCliente: cliente.tipoCliente || 'EMPRESA',
+        nombreCliente: cliente.nombreCliente || '',
+        numeroDocumento: cliente.numeroDocumento || '',
+        telefono: cliente.telefono || '',
+        direccion: cliente.direccion || '',
+      });
+
+      setMostrarModalEditar(true);
+    } catch (err) {
+      console.error('Error obteniendo cliente:', err);
+      alert(extraerMensajeError(err, 'No se pudo cargar el cliente.'));
+    } finally {
+      setCargandoDetalle(false);
+    }
+  };
+
+  const cerrarModalEditar = () => {
+    setMostrarModalEditar(false);
+    setClienteSeleccionado(null);
+    setFormularioCliente(crearFormularioVacio());
+  };
+
+  const validarFormulario = () => {
+    const documento = formularioCliente.numeroDocumento.trim();
+
+    if (!formularioCliente.nombreCliente.trim()) {
+      alert('Debe ingresar el nombre o razón social.');
+      return false;
+    }
+
+    if (!documento) {
+      alert('Debe ingresar el número de documento.');
+      return false;
+    }
+
+    if (formularioCliente.tipoCliente === 'EMPRESA' && documento.length !== 11) {
+      alert('El RUC debe tener 11 dígitos.');
+      return false;
+    }
+
+    if (formularioCliente.tipoCliente === 'PERSONA' && documento.length !== 8) {
+      alert('El DNI debe tener 8 dígitos.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const construirPayload = () => ({
+    tipoCliente: formularioCliente.tipoCliente,
+    nombreCliente: formularioCliente.nombreCliente.trim(),
+    numeroDocumento: formularioCliente.numeroDocumento.trim(),
+    telefono: formularioCliente.telefono.trim() || null,
+    direccion: formularioCliente.direccion.trim() || null,
+  });
 
   const handleCrearCliente = async (e) => {
     e.preventDefault();
 
-    try {
-      await crearCliente(nuevoCliente);
+    if (!validarFormulario()) return;
 
+    try {
+      setGuardando(true);
+      setMensaje('');
+
+      const response = await crearCliente(construirPayload());
+
+      setMensaje(response.message || 'Cliente registrado correctamente.');
       cerrarModalCrear();
-      cargarDatos();
-    } catch (error) {
-      console.error('Error creando cliente:', error);
-      alert('No se pudo registrar el cliente');
+      await cargarDatos(false);
+    } catch (err) {
+      console.error('Error creando cliente:', err);
+      alert(extraerMensajeError(err, 'No se pudo registrar el cliente.'));
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handleEditarCliente = async (e) => {
+    e.preventDefault();
+
+    if (!validarFormulario() || !clienteSeleccionado) return;
+
+    try {
+      setGuardando(true);
+      setMensaje('');
+
+      const response = await editarCliente(
+        clienteSeleccionado.idCliente,
+        construirPayload()
+      );
+
+      setMensaje(response.message || 'Cliente actualizado correctamente.');
+      cerrarModalEditar();
+      await cargarDatos(false);
+    } catch (err) {
+      console.error('Error editando cliente:', err);
+      alert(extraerMensajeError(err, 'No se pudo actualizar el cliente.'));
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const abrirDetalle = async (idCliente) => {
+    try {
+      setMostrarDetalle(true);
+      setCargandoDetalle(true);
+      setClienteSeleccionado(null);
+
+      const response = await obtenerClientePorId(idCliente);
+
+      setClienteSeleccionado(response.data);
+    } catch (err) {
+      console.error('Error obteniendo detalle:', err);
+      alert(extraerMensajeError(err, 'No se pudo cargar el detalle.'));
+      setMostrarDetalle(false);
+    } finally {
+      setCargandoDetalle(false);
+    }
+  };
+
+  const cerrarDetalle = () => {
+    setMostrarDetalle(false);
+    setClienteSeleccionado(null);
+  };
+
+  const abrirHistorial = async (idCliente) => {
+    try {
+      setMostrarHistorial(true);
+      setCargandoHistorial(true);
+      setHistorialCliente(null);
+
+      const response = await obtenerHistorialComprasCliente(idCliente);
+
+      setHistorialCliente(response.data);
+    } catch (err) {
+      console.error('Error obteniendo historial:', err);
+      alert(extraerMensajeError(err, 'No se pudo cargar el historial.'));
+      setMostrarHistorial(false);
+    } finally {
+      setCargandoHistorial(false);
+    }
+  };
+
+  const cerrarHistorial = () => {
+    setMostrarHistorial(false);
+    setHistorialCliente(null);
+  };
+
+  const cambiarEstadoCliente = async (cliente) => {
+    const estaActivo = cliente.estado !== 'INACTIVO';
+
+    const confirmar = window.confirm(
+      estaActivo
+        ? `¿Desactivar al cliente ${obtenerNombreCliente(cliente)}?`
+        : `¿Activar al cliente ${obtenerNombreCliente(cliente)}?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setMensaje('');
+
+      const response = estaActivo
+        ? await desactivarCliente(cliente.idCliente)
+        : await activarCliente(cliente.idCliente);
+
+      setMensaje(response.message || 'Estado del cliente actualizado.');
+      await cargarDatos(false);
+    } catch (err) {
+      console.error('Error cambiando estado:', err);
+      alert(extraerMensajeError(err, 'No se pudo cambiar el estado.'));
     }
   };
 
@@ -162,8 +398,32 @@ const ClientesPage = () => {
           Gestión de Clientes
         </h4>
 
-        <p className="page-subtitle mb-0">CRM - Administración de clientes</p>
+        <p className="page-subtitle mb-0">
+          CRM - Administración de clientes e historial de compras
+        </p>
       </div>
+
+      {error && (
+        <div className="alert alert-danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </div>
+      )}
+
+      {mensaje && (
+        <div className="alert alert-success d-flex justify-content-between align-items-center">
+          <span>
+            <i className="bi bi-check-circle me-2"></i>
+            {mensaje}
+          </span>
+
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setMensaje('')}
+          ></button>
+        </div>
+      )}
 
       <div className="row g-3 mb-4">
         <div className="col-12 col-md-6 col-xl-3">
@@ -178,7 +438,7 @@ const ClientesPage = () => {
         <div className="col-12 col-md-6 col-xl-3">
           <SummaryCard
             title="Empresas / Talleres"
-            value={resumen?.empresas ?? 0}
+            value={resumen?.empresasTalleres ?? 0}
             description="Con RUC registrado"
             color="info"
           />
@@ -214,7 +474,7 @@ const ClientesPage = () => {
               <input
                 type="text"
                 className="form-control app-input"
-                placeholder="Buscar por nombre, RUC, DNI o email..."
+                placeholder="Buscar por nombre, RUC, DNI o teléfono..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
@@ -225,7 +485,15 @@ const ClientesPage = () => {
             <select
               className="form-select app-select"
               value={tipoCliente}
-              onChange={(e) => setTipoCliente(e.target.value)}
+              onChange={(e) => {
+                const nuevoTipo = e.target.value;
+
+                setTipoCliente(nuevoTipo);
+                setFiltros({
+                  busqueda: busqueda.trim(),
+                  tipoCliente: nuevoTipo,
+                });
+              }}
             >
               <option value="">Todos</option>
               <option value="EMPRESA">Empresas / Talleres</option>
@@ -244,7 +512,7 @@ const ClientesPage = () => {
             <button
               type="button"
               className="btn btn-primary app-btn-primary"
-              onClick={() => setMostrarModalCrear(true)}
+              onClick={abrirModalCrear}
             >
               <i className="bi bi-plus-lg me-2"></i>
               Nuevo Cliente
@@ -291,17 +559,19 @@ const ClientesPage = () => {
                 <div className="app-card app-card-hover p-3 h-100">
                   <div className="d-flex align-items-start gap-3 mb-3">
                     <div
-                      className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                      className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
                       style={{ width: '48px', height: '48px' }}
                     >
-                      {obtenerIniciales(cliente.nombre)}
+                      {obtenerIniciales(cliente)}
                     </div>
 
                     <div className="flex-grow-1">
                       <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <h6 className="fw-bold mb-0">{cliente.nombre}</h6>
+                        <h6 className="fw-bold mb-0">
+                          {obtenerNombreCliente(cliente)}
+                        </h6>
 
-                        {cliente.frecuente && (
+                        {esFrecuente(cliente) && (
                           <i
                             className="bi bi-star-fill text-warning"
                             title="Cliente frecuente"
@@ -309,13 +579,17 @@ const ClientesPage = () => {
                         )}
                       </div>
 
-                      <div className="d-flex align-items-center gap-2 mt-1">
-                        <span className={`badge app-badge ${obtenerTipoBadge(cliente.tipoCliente)}`}>
+                      <div className="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                        <span
+                          className={`badge app-badge ${obtenerTipoBadge(
+                            cliente.tipoCliente
+                          )}`}
+                        >
                           {obtenerTipoTexto(cliente.tipoCliente)}
                         </span>
 
                         <span className="text-muted small">
-                          {cliente.tipoDocumento}: {cliente.numeroDocumento}
+                          {obtenerDocumentoTexto(cliente)}
                         </span>
                       </div>
                     </div>
@@ -323,17 +597,12 @@ const ClientesPage = () => {
 
                   <p className="mb-2">
                     <i className="bi bi-telephone me-2 text-muted"></i>
-                    {cliente.telefono}
-                  </p>
-
-                  <p className="mb-2">
-                    <i className="bi bi-envelope me-2 text-muted"></i>
-                    {cliente.correo}
+                    {cliente.telefono || 'Sin teléfono'}
                   </p>
 
                   <p className="mb-3">
                     <i className="bi bi-geo-alt me-2 text-muted"></i>
-                    {cliente.direccion}
+                    {cliente.direccion || 'Sin dirección'}
                   </p>
 
                   <hr />
@@ -344,7 +613,7 @@ const ClientesPage = () => {
                         <span className="text-muted small d-block">
                           Compras
                         </span>
-                        <strong>{cliente.numeroCompras}</strong>
+                        <strong>{cliente.numeroCompras ?? 0}</strong>
                       </div>
                     </div>
 
@@ -360,9 +629,38 @@ const ClientesPage = () => {
                     </div>
                   </div>
 
-                  <p className="text-muted small text-center mb-0">
-                    Última compra: {cliente.ultimaCompra}
+                  <p className="text-muted small text-center mb-3">
+                    Última compra: {formatearFecha(cliente.ultimaCompra)}
                   </p>
+
+                  <div className="d-flex justify-content-between gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => abrirDetalle(cliente.idCliente)}
+                    >
+                      <i className="bi bi-eye me-1"></i>
+                      Ver
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => abrirModalEditar(cliente.idCliente)}
+                    >
+                      <i className="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-info"
+                      onClick={() => abrirHistorial(cliente.idCliente)}
+                    >
+                      <i className="bi bi-clock-history me-1"></i>
+                      Historial
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -384,7 +682,7 @@ const ClientesPage = () => {
                   <th className="text-end">Monto Total</th>
                   <th>Última Compra</th>
                   <th>Estado</th>
-                  <th className="text-center">Ver</th>
+                  <th className="text-center">Acciones</th>
                 </tr>
               </thead>
 
@@ -402,64 +700,102 @@ const ClientesPage = () => {
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <div
-                            className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                            className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
                             style={{
                               width: '34px',
                               height: '34px',
                               fontSize: '12px',
                             }}
                           >
-                            {obtenerIniciales(cliente.nombre)}
+                            {obtenerIniciales(cliente)}
                           </div>
 
-                          <div>
-                            <strong>{cliente.nombre}</strong>
-                            <br />
-                            <span className="text-muted small">
-                              {cliente.correo}
-                            </span>
-                          </div>
+                          <strong>{obtenerNombreCliente(cliente)}</strong>
                         </div>
                       </td>
 
                       <td>
-                        <span className={`badge app-badge ${obtenerTipoBadge(cliente.tipoCliente)}`}>
+                        <span
+                          className={`badge app-badge ${obtenerTipoBadge(
+                            cliente.tipoCliente
+                          )}`}
+                        >
                           {obtenerTipoTexto(cliente.tipoCliente)}
                         </span>
                       </td>
 
-                      <td>
-                        {cliente.tipoDocumento}: {cliente.numeroDocumento}
-                      </td>
+                      <td>{obtenerDocumentoTexto(cliente)}</td>
 
-                      <td>{cliente.telefono}</td>
+                      <td>{cliente.telefono || '-'}</td>
 
                       <td className="text-center fw-bold">
-                        {cliente.numeroCompras}
+                        {cliente.numeroCompras ?? 0}
                       </td>
 
                       <td className="text-end fw-bold text-primary">
                         {formatearMoneda(cliente.montoTotal)}
                       </td>
 
-                      <td>{cliente.ultimaCompra}</td>
+                      <td>{formatearFecha(cliente.ultimaCompra)}</td>
 
                       <td>
-                        <BadgeStatus variant="success">
-                          {cliente.estado}
+                        <BadgeStatus variant={obtenerEstadoVariant(cliente.estado)}>
+                          {cliente.estado || 'ACTIVO'}
                         </BadgeStatus>
                       </td>
 
                       <td className="text-center">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() =>
-                            alert('Detalle de cliente pendiente de endpoint real')
-                          }
-                        >
-                          <i className="bi bi-eye"></i>
-                        </button>
+                        <div className="d-flex justify-content-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => abrirDetalle(cliente.idCliente)}
+                            title="Ver detalle"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => abrirModalEditar(cliente.idCliente)}
+                            title="Editar"
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-info"
+                            onClick={() => abrirHistorial(cliente.idCliente)}
+                            title="Historial"
+                          >
+                            <i className="bi bi-clock-history"></i>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={
+                              cliente.estado === 'INACTIVO'
+                                ? 'btn btn-sm btn-outline-success'
+                                : 'btn btn-sm btn-outline-danger'
+                            }
+                            onClick={() => cambiarEstadoCliente(cliente)}
+                            title={
+                              cliente.estado === 'INACTIVO'
+                                ? 'Activar cliente'
+                                : 'Desactivar cliente'
+                            }
+                          >
+                            <i
+                              className={
+                                cliente.estado === 'INACTIVO'
+                                  ? 'bi bi-check-circle'
+                                  : 'bi bi-x-circle'
+                              }
+                            ></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -471,154 +807,416 @@ const ClientesPage = () => {
       )}
 
       {mostrarModalCrear && (
-        <div
-          className="modal d-block"
-          tabIndex="-1"
-          style={{ background: 'rgba(0, 0, 0, 0.45)' }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content">
-              <form onSubmit={handleCrearCliente}>
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    <i className="bi bi-plus-lg me-2 text-primary"></i>
-                    Registrar Nuevo Cliente
-                  </h5>
+        <FormularioClienteModal
+          titulo="Registrar Nuevo Cliente"
+          formularioCliente={formularioCliente}
+          guardando={guardando}
+          onChange={handleChangeFormulario}
+          onClose={cerrarModalCrear}
+          onSubmit={handleCrearCliente}
+          textoBoton="Guardar Cliente"
+        />
+      )}
 
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={cerrarModalCrear}
-                  ></button>
+      {mostrarModalEditar && (
+        <FormularioClienteModal
+          titulo="Editar Cliente"
+          formularioCliente={formularioCliente}
+          guardando={guardando}
+          onChange={handleChangeFormulario}
+          onClose={cerrarModalEditar}
+          onSubmit={handleEditarCliente}
+          textoBoton="Actualizar Cliente"
+        />
+      )}
+
+      {mostrarDetalle && (
+        <div className="app-detail-overlay">
+          <div className="app-detail-modal">
+            <div className="app-detail-header">
+              <h5 className="app-detail-title">
+                <i className="bi bi-person-vcard me-2 text-primary"></i>
+                Detalle de cliente
+              </h5>
+
+              <button
+                type="button"
+                className="btn-close"
+                onClick={cerrarDetalle}
+              ></button>
+            </div>
+
+            <div className="app-detail-body">
+              {cargandoDetalle ? (
+                <div className="d-flex align-items-center gap-2">
+                  <div className="spinner-border spinner-border-sm text-primary" />
+                  <span>Cargando detalle...</span>
                 </div>
+              ) : clienteSeleccionado ? (
+                <>
+                  <div className="row g-3 mb-3">
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Cliente</span>
+                        <h6>{obtenerNombreCliente(clienteSeleccionado)}</h6>
+                      </div>
+                    </div>
 
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">
-                      Nombre completo / Razón social *
-                    </label>
-                    <input
-                      type="text"
-                      name="nombre"
-                      className="form-control app-input"
-                      value={nuevoCliente.nombre}
-                      onChange={handleChangeCrear}
-                      placeholder="Ej: Carpintería García E.I.R.L."
-                      required
-                    />
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Documento</span>
+                        <h6>{obtenerDocumentoTexto(clienteSeleccionado)}</h6>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Estado</span>
+                        <h6>{clienteSeleccionado.estado || 'ACTIVO'}</h6>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Teléfono</span>
+                        <h6>{clienteSeleccionado.telefono || '-'}</h6>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-md-8">
+                      <div className="app-detail-info-card">
+                        <span>Dirección</span>
+                        <h6>{clienteSeleccionado.direccion || '-'}</h6>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="row g-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Tipo de cliente</label>
-                      <select
-                        name="tipoCliente"
-                        className="form-select app-select"
-                        value={nuevoCliente.tipoCliente}
-                        onChange={handleChangeCrear}
-                      >
-                        <option value="EMPRESA">Empresa / Taller</option>
-                        <option value="PERSONA">Persona Natural</option>
-                      </select>
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-summary-box">
+                        <span className="text-muted">Compras</span>
+                        <h5 className="fw-bold mb-0">
+                          {clienteSeleccionado.numeroCompras ?? 0}
+                        </h5>
+                      </div>
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Tipo de documento</label>
-                      <select
-                        name="tipoDocumento"
-                        className="form-select app-select"
-                        value={nuevoCliente.tipoDocumento}
-                        onChange={handleChangeCrear}
-                      >
-                        <option value="RUC">RUC</option>
-                        <option value="DNI">DNI</option>
-                      </select>
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-summary-box">
+                        <span className="text-muted">Monto total</span>
+                        <h5 className="fw-bold text-primary mb-0">
+                          {formatearMoneda(clienteSeleccionado.montoTotal)}
+                        </h5>
+                      </div>
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">N° Documento *</label>
-                      <input
-                        type="text"
-                        name="numeroDocumento"
-                        className="form-control app-input"
-                        value={nuevoCliente.numeroDocumento}
-                        onChange={handleChangeCrear}
-                        placeholder={
-                          nuevoCliente.tipoDocumento === 'RUC'
-                            ? '20123456789'
-                            : '12345678'
-                        }
-                        required
-                      />
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-summary-box">
+                        <span className="text-muted">Ticket promedio</span>
+                        <h5 className="fw-bold text-primary mb-0">
+                          {formatearMoneda(clienteSeleccionado.ticketPromedio)}
+                        </h5>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p>No se encontró información del cliente.</p>
+              )}
+            </div>
+
+            <div className="app-detail-footer">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={cerrarDetalle}
+              >
+                <i className="bi bi-x-circle me-2"></i>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mostrarHistorial && (
+        <div className="app-detail-overlay">
+          <div className="app-detail-modal">
+            <div className="app-detail-header">
+              <h5 className="app-detail-title">
+                <i className="bi bi-clock-history me-2 text-primary"></i>
+                Historial de compras
+              </h5>
+
+              <button
+                type="button"
+                className="btn-close"
+                onClick={cerrarHistorial}
+              ></button>
+            </div>
+
+            <div className="app-detail-body">
+              {cargandoHistorial ? (
+                <div className="d-flex align-items-center gap-2">
+                  <div className="spinner-border spinner-border-sm text-primary" />
+                  <span>Cargando historial...</span>
+                </div>
+              ) : historialCliente ? (
+                <>
+                  <div className="row g-3 mb-3">
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Cliente</span>
+                        <h6>{historialCliente.nombreCliente}</h6>
+                      </div>
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Teléfono</label>
-                      <input
-                        type="text"
-                        name="telefono"
-                        className="form-control app-input"
-                        value={nuevoCliente.telefono}
-                        onChange={handleChangeCrear}
-                        placeholder="9XX-XXXXXX"
-                      />
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Compras</span>
+                        <h6>{historialCliente.numeroCompras ?? 0}</h6>
+                      </div>
                     </div>
 
-                    <div className="col-12">
-                      <label className="form-label">Correo electrónico</label>
-                      <input
-                        type="email"
-                        name="correo"
-                        className="form-control app-input"
-                        value={nuevoCliente.correo}
-                        onChange={handleChangeCrear}
-                        placeholder="cliente@ejemplo.com"
-                      />
-                    </div>
-
-                    <div className="col-12">
-                      <label className="form-label">Dirección</label>
-                      <input
-                        type="text"
-                        name="direccion"
-                        className="form-control app-input"
-                        value={nuevoCliente.direccion}
-                        onChange={handleChangeCrear}
-                        placeholder="Av. Principal 123, Chiclayo"
-                      />
+                    <div className="col-12 col-md-4">
+                      <div className="app-detail-info-card">
+                        <span>Monto total</span>
+                        <h6>{formatearMoneda(historialCliente.montoTotal)}</h6>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="alert alert-info mt-3 mb-0">
-                    <i className="bi bi-info-circle me-2"></i>
-                    Este cliente se guarda temporalmente en el navegador. Cuando
-                    tengas endpoints reales, solo se cambiará el service.
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle app-table">
+                      <thead>
+                        <tr>
+                          <th>Venta</th>
+                          <th>Fecha</th>
+                          <th>Pago</th>
+                          <th>Comprobante</th>
+                          <th>Estado</th>
+                          <th className="text-end">Total</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {(historialCliente.compras || []).length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="text-center text-muted">
+                              No hay compras registradas.
+                            </td>
+                          </tr>
+                        ) : (
+                          historialCliente.compras.map((compra) => (
+                            <tr key={compra.idVenta}>
+                              <td>
+                                <strong className="text-primary">
+                                  {compra.codigoVenta}
+                                </strong>
+                              </td>
+
+                              <td>
+                                {formatearFecha(compra.fechaHoraVenta)}
+                                <br />
+                                <span className="text-muted small">
+                                  {formatearHora(compra.fechaHoraVenta)}
+                                </span>
+                              </td>
+
+                              <td>{compra.metodoPago || '-'}</td>
+
+                              <td>
+                                {compra.tipoComprobante || '-'}
+                                <br />
+                                <span className="text-muted small">
+                                  {compra.numeroComprobante || '-'}
+                                </span>
+                              </td>
+
+                              <td>
+                                <BadgeStatus
+                                  variant={
+                                    compra.estadoVenta === 'ANULADA'
+                                      ? 'danger'
+                                      : 'success'
+                                  }
+                                >
+                                  {compra.estadoVenta}
+                                </BadgeStatus>
+                              </td>
+
+                              <td className="text-end fw-bold">
+                                {formatearMoneda(compra.total)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
+                </>
+              ) : (
+                <p>No se encontró historial.</p>
+              )}
+            </div>
 
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={cerrarModalCrear}
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary app-btn-primary"
-                  >
-                    <i className="bi bi-save me-2"></i>
-                    Guardar Cliente
-                  </button>
-                </div>
-              </form>
+            <div className="app-detail-footer">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={cerrarHistorial}
+              >
+                <i className="bi bi-x-circle me-2"></i>
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
       )}
     </MainLayout>
+  );
+};
+
+const FormularioClienteModal = ({
+  titulo,
+  formularioCliente,
+  guardando,
+  onChange,
+  onClose,
+  onSubmit,
+  textoBoton,
+}) => {
+  const tipoDocumento =
+    formularioCliente.tipoCliente === 'EMPRESA' ? 'RUC' : 'DNI';
+
+  return (
+    <div className="purchase-modal-overlay">
+      <div className="purchase-modal purchase-provider-modal">
+        <div className="modal-content">
+          <form onSubmit={onSubmit}>
+            <div className="modal-header">
+              <h5 className="modal-title">
+                <i className="bi bi-plus-lg me-2 text-primary"></i>
+                {titulo}
+              </h5>
+
+              <button
+                type="button"
+                className="btn-close"
+                onClick={onClose}
+              ></button>
+            </div>
+
+            <div className="modal-body">
+              <div className="row g-3">
+                <div className="col-12 col-md-5">
+                  <label className="form-label">Tipo de cliente *</label>
+                  <select
+                    name="tipoCliente"
+                    className="form-select app-select"
+                    value={formularioCliente.tipoCliente}
+                    onChange={onChange}
+                    required
+                  >
+                    <option value="EMPRESA">Empresa / Taller</option>
+                    <option value="PERSONA">Persona Natural</option>
+                  </select>
+                </div>
+
+                <div className="col-12 col-md-7">
+                  <label className="form-label">{tipoDocumento} *</label>
+                  <input
+                    type="text"
+                    name="numeroDocumento"
+                    className="form-control app-input"
+                    value={formularioCliente.numeroDocumento}
+                    onChange={onChange}
+                    placeholder={
+                      formularioCliente.tipoCliente === 'EMPRESA'
+                        ? '20123456789'
+                        : '12345678'
+                    }
+                    maxLength={
+                      formularioCliente.tipoCliente === 'EMPRESA' ? 11 : 8
+                    }
+                    pattern="[0-9]+"
+                    required
+                  />
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label">
+                    Nombre completo / Razón social *
+                  </label>
+                  <input
+                    type="text"
+                    name="nombreCliente"
+                    className="form-control app-input"
+                    value={formularioCliente.nombreCliente}
+                    onChange={onChange}
+                    placeholder="Ej: Carpintería García E.I.R.L."
+                    maxLength="150"
+                    required
+                  />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Teléfono</label>
+                  <input
+                    type="text"
+                    name="telefono"
+                    className="form-control app-input"
+                    value={formularioCliente.telefono}
+                    onChange={onChange}
+                    placeholder="9XX-XXXXXX"
+                    maxLength="20"
+                  />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Dirección</label>
+                  <input
+                    type="text"
+                    name="direccion"
+                    className="form-control app-input"
+                    value={formularioCliente.direccion}
+                    onChange={onChange}
+                    placeholder="Av. Principal 123"
+                    maxLength="200"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={guardando}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="btn btn-primary app-btn-primary"
+                disabled={guardando}
+              >
+                {guardando ? (
+                  <span className="spinner-border spinner-border-sm me-2" />
+                ) : (
+                  <i className="bi bi-save me-2"></i>
+                )}
+                {textoBoton}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
 
