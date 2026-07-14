@@ -614,6 +614,7 @@ public CompraDetalleResponse cambiarEstadoCompra(
             .orElseThrow(() ->
                     new RuntimeException("Usuario autenticado no encontrado")
             );
+     EstadoCompra estadoAnterior = compra.getEstadoFisico();
 
     StoredProcedureQuery procedimiento =
             entityManager.createStoredProcedureQuery(
@@ -654,6 +655,14 @@ public CompraDetalleResponse cambiarEstadoCompra(
     );
 
     procedimiento.execute();
+    if (request.getEstado() == EstadoCompra.RECIBIDO
+        && estadoAnterior != EstadoCompra.RECIBIDO) {
+
+    registrarEgresoCajaPorCompra(
+            idCompra,
+            usuario.getIdUsuario()
+    );
+}
 
     /*
      * Limpiamos el contexto porque el procedimiento actualiza la base directamente.
@@ -670,6 +679,63 @@ public CompraDetalleResponse cambiarEstadoCompra(
 
     return obtenerDetalleCompra(idCompra);
 }
+private void registrarEgresoCajaPorCompra(
+        Integer idCompra,
+        Integer idUsuario
+) {
+
+    log.info(
+            "Registrando egreso automático en caja por compra recibida. IdCompra: {}, IdUsuario: {}",
+            idCompra,
+            idUsuario
+    );
+
+    StoredProcedureQuery procedimientoCaja =
+            entityManager.createStoredProcedureQuery(
+                    "sp_registrar_egreso_compra_caja"
+            );
+
+    procedimientoCaja.registerStoredProcedureParameter(
+            "p_id_compra",
+            Integer.class,
+            ParameterMode.IN
+    );
+
+    procedimientoCaja.registerStoredProcedureParameter(
+            "p_id_usuario",
+            Integer.class,
+            ParameterMode.IN
+    );
+
+    procedimientoCaja.registerStoredProcedureParameter(
+            "p_descripcion",
+            String.class,
+            ParameterMode.IN
+    );
+
+    procedimientoCaja.setParameter(
+            "p_id_compra",
+            idCompra
+    );
+
+    procedimientoCaja.setParameter(
+            "p_id_usuario",
+            idUsuario
+    );
+
+    procedimientoCaja.setParameter(
+            "p_descripcion",
+            "Pago de compra recibida"
+    );
+
+    procedimientoCaja.execute();
+
+    log.info(
+            "Egreso automático en caja registrado correctamente. IdCompra: {}",
+            idCompra
+    );
+}
+
 /**
  * Obtiene el detalle completo de una compra.
  *
