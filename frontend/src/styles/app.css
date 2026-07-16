@@ -113,10 +113,77 @@ body {
   background: #f8fbff;
 }
 
-.app-table th:nth-child(7),
-.app-table td:nth-child(7) {
-  min-width: 320px;
+
+.sales-table th:nth-child(7),
+.sales-table td:nth-child(7) {
+  width: 130px;
+  min-width: 130px;
 }
+
+.sales-table th:nth-child(8),
+.sales-table td:nth-child(8) {
+  width: 190px;
+  min-width: 190px;
+}
+
+.inventory-table th:nth-child(1),
+.inventory-table td:nth-child(1) {
+  width: 105px;
+}
+
+.inventory-table th:nth-child(2),
+.inventory-table td:nth-child(2) {
+  width: 210px;
+}
+
+.inventory-table th:nth-child(3),
+.inventory-table td:nth-child(3) {
+  min-width: 180px;
+}
+
+.inventory-table th:nth-child(4),
+.inventory-table td:nth-child(4) {
+  width: 210px;
+}
+
+.inventory-table th:nth-child(5),
+.inventory-table td:nth-child(5),
+.inventory-table th:nth-child(6),
+.inventory-table td:nth-child(6) {
+  width: 95px;
+}
+
+.inventory-table th:nth-child(7),
+.inventory-table td:nth-child(7),
+.inventory-table th:nth-child(8),
+.inventory-table td:nth-child(8),
+.inventory-table th:nth-child(9),
+.inventory-table td:nth-child(9) {
+  width: 130px;
+}
+
+.inventory-table th:nth-child(10),
+.inventory-table td:nth-child(10) {
+  width: 80px;
+  text-align: center;
+}
+
+.purchases-table th:nth-child(7),
+.purchases-table td:nth-child(7) {
+  min-width: 360px;
+}
+
+.purchases-table th:nth-child(8),
+.purchases-table td:nth-child(8) {
+  min-width: 190px;
+}
+
+.purchases-table th:nth-child(9),
+.purchases-table td:nth-child(9) {
+  width: 70px;
+  text-align: center;
+}
+
 
 .app-badge {
   border-radius: 999px;

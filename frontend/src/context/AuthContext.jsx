@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { loginRequest } from '../services/authService';
+import { loginRequest, logoutRequest } from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -42,15 +42,20 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  const logout = () => {
+const logout = async () => {
+  try {
+    await logoutRequest();
+  } catch (error) {
+    console.error('Error registrando cierre de sesión:', error);
+  } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     localStorage.removeItem('usuario');
-
     setToken(null);
     setRol(null);
     setUsuario(null);
-  };
+  }
+};
 
   const isAuthenticated = !!token;
 

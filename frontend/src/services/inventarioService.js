@@ -1,202 +1,140 @@
-const PRODUCTOS_MOCK = [
-  {
-    idProducto: 1,
-    codigo: 'TEL-001',
-    nombre: 'Tela Terciopelo Azul',
-    unidad: 'Metro',
-    categoria: 'Telas y Tapicería',
-    stockActual: 45,
-    stockMinimo: 10,
-    precioCosto: 12.5,
-    precioVenta: 18,
-  },
-  {
-    idProducto: 2,
-    codigo: 'TEL-002',
-    nombre: 'Cuero Sintético Negro',
-    unidad: 'Metro',
-    categoria: 'Telas y Tapicería',
-    stockActual: 30,
-    stockMinimo: 8,
-    precioCosto: 22,
-    precioVenta: 32,
-  },
-  {
-    idProducto: 3,
-    codigo: 'TEL-003',
-    nombre: 'Tela Chenille Beige',
-    unidad: 'Metro',
-    categoria: 'Telas y Tapicería',
-    stockActual: 60,
-    stockMinimo: 12,
-    precioCosto: 15,
-    precioVenta: 22,
-  },
-  {
-    idProducto: 4,
-    codigo: 'ESP-001',
-    nombre: 'Espuma HR-40 10cm',
-    unidad: 'Plancha',
-    categoria: 'Espumas y Rellenos',
-    stockActual: 6,
-    stockMinimo: 8,
-    precioCosto: 45,
-    precioVenta: 68,
-  },
-  {
-    idProducto: 5,
-    codigo: 'PEG-001',
-    nombre: 'Pegamento de Contacto 1L',
-    unidad: 'Unidad',
-    categoria: 'Pegamentos',
-    stockActual: 0,
-    stockMinimo: 5,
-    precioCosto: 18,
-    precioVenta: 28,
-  },
-];
+import axiosInstance from './axiosInstance';
 
-const MOVIMIENTOS_MOCK = [
-  {
-    idMovimiento: 1,
-    fechaHora: '2026-05-06T09:15:00',
-    producto: 'Tela Terciopelo Azul',
-    tipo: 'SALIDA',
-    cantidad: 20,
-    motivo: 'Venta V-2026-001',
-    stockAnterior: 65,
-    stockActual: 45,
-    usuario: 'Iris Arroyo',
-  },
-  {
-    idMovimiento: 2,
-    fechaHora: '2026-05-06T09:15:00',
-    producto: 'Pegamento de Contacto 1L',
-    tipo: 'SALIDA',
-    cantidad: 5,
-    motivo: 'Venta V-2026-001',
-    stockAnterior: 30,
-    stockActual: 25,
-    usuario: 'Iris Arroyo',
-  },
-  {
-    idMovimiento: 3,
-    fechaHora: '2026-05-06T10:30:00',
-    producto: 'Tablero MDF 15mm',
-    tipo: 'SALIDA',
-    cantidad: 2,
-    motivo: 'Venta V-2026-002',
-    stockAnterior: 14,
-    stockActual: 12,
-    usuario: 'Iris Arroyo',
-  },
-  {
-    idMovimiento: 4,
-    fechaHora: '2026-05-05T14:45:00',
-    producto: 'Cuero Sintético Negro',
-    tipo: 'SALIDA',
-    cantidad: 30,
-    motivo: 'Venta V-2026-003',
-    stockAnterior: 60,
-    stockActual: 30,
-    usuario: 'Iris Arroyo',
-  },
-];
+const extraerData = (response) => response?.data?.data ?? response?.data ?? response;
 
-const obtenerProductosGuardados = () => {
-  const guardados = localStorage.getItem('productos_mock');
-
-  if (!guardados) {
-    localStorage.setItem('productos_mock', JSON.stringify(PRODUCTOS_MOCK));
-    return PRODUCTOS_MOCK;
-  }
-
-  return JSON.parse(guardados);
+const toNumber = (value) => {
+  const numero = Number(value);
+  return Number.isNaN(numero) ? 0 : numero;
 };
 
-const guardarProductos = (productos) => {
-  localStorage.setItem('productos_mock', JSON.stringify(productos));
-};
+const mapearProducto = (producto = {}) => ({
+  idProducto: producto.idProducto,
+  codigo: producto.codigoProducto || producto.codigo || '-',
+  nombre: producto.nombreProducto || producto.nombre || '-',
+  descripcion: producto.descripcion || '',
+  unidad: producto.unidadMedida || producto.unidad || 'UNIDAD',
+  stockActual: toNumber(producto.cantidadActual ?? producto.stockActual),
+  stockMinimo: toNumber(producto.stockMinimo),
+  estado: producto.estadoStock || producto.estado || 'DISPONIBLE',
+  estadoProducto: producto.estadoProducto || 'ACTIVO',
+  fechaHoraActualizacion: producto.fechaHoraActualizacion || null,
 
-const calcularEstadoProducto = (producto) => {
-  if (Number(producto.stockActual) <= 0) return 'SIN_STOCK';
-  if (Number(producto.stockActual) < Number(producto.stockMinimo)) return 'STOCK_BAJO';
-  return 'DISPONIBLE';
+  // Pendiente de backend:
+  categoria: 'Por anadir',
+  precioCosto: null,
+  precioVenta: null,
+});
+
+const mapearMovimiento = (movimiento = {}) => {
+  const tipoNombre =
+    movimiento.tipoMovimientoInventario?.nombre ||
+    movimiento.tipo ||
+    movimiento.nombreTipoMovimientoInventario ||
+    'MOVIMIENTO';
+
+  const esEntrada =
+    tipoNombre === 'INGRESO' || tipoNombre === 'AJUSTE_POSITIVO';
+
+  return {
+    idMovimiento:
+      movimiento.idMovimientoInventario ||
+      movimiento.idMovimiento ||
+      `${movimiento.idProducto || 'mov'}-${movimiento.fechaHoraMovimientoInventario || Date.now()}`,
+    fechaHora:
+      movimiento.fechaHoraMovimientoInventario ||
+      movimiento.fechaHora ||
+      null,
+    producto:
+      movimiento.producto?.nombreProducto ||
+      movimiento.producto?.nombre ||
+      movimiento.producto ||
+      '-',
+    tipo: esEntrada ? 'ENTRADA' : 'SALIDA',
+    tipoOriginal: tipoNombre,
+    cantidad: toNumber(movimiento.cantidad),
+    motivo:
+      movimiento.compra?.numeroCompra ||
+      movimiento.venta?.numeroVenta ||
+      movimiento.recepcionCompra?.idRecepcionCompra ||
+      tipoNombre,
+    stockAnterior: toNumber(movimiento.stockAnterior),
+    stockActual: toNumber(movimiento.stockNuevo ?? movimiento.stockActual),
+    usuario:
+      movimiento.usuarioRegistro?.nombreCompleto ||
+      movimiento.usuarioRegistro?.usuarioLogin ||
+      movimiento.usuario ||
+      '-',
+    estado: movimiento.estadoFisico || 'REGISTRADO',
+  };
 };
 
 export const obtenerResumenInventario = async () => {
-  const productos = obtenerProductosGuardados();
+  const response = await axiosInstance.get('/inventario/dashboard');
+  const data = extraerData(response) || {};
 
-  const totalProductos = productos.length;
-  const sinStock = productos.filter((p) => calcularEstadoProducto(p) === 'SIN_STOCK').length;
-  const stockBajo = productos.filter((p) => calcularEstadoProducto(p) === 'STOCK_BAJO').length;
-  const disponible = productos.filter((p) => calcularEstadoProducto(p) === 'DISPONIBLE').length;
+  const sinStock = data.productosSinStock ?? data.sinStock ?? 0;
+  const stockBajo = data.productosStockBajo ?? data.stockBajo ?? 0;
+  const disponible = data.productosDisponibles ?? data.disponible ?? 0;
 
   return {
     data: {
-      totalProductos,
+      totalProductos: data.totalProductos ?? 0,
       sinStock,
       stockBajo,
       disponible,
+      productosSinStock: sinStock,
+      productosStockBajo: stockBajo,
+      productosDisponibles: disponible,
     },
   };
 };
 
-export const listarProductosInventario = async ({ busqueda = '', categoria = '', estado = '' }) => {
-  let productos = obtenerProductosGuardados();
+export const listarProductosInventario = async ({
+  busqueda = '',
+  estado = '',
+  buscar = '',
+  estadoStock = '',
+} = {}) => {
+  const response = await axiosInstance.get('/inventario/productos', {
+    params: {
+      buscar: busqueda || buscar || undefined,
+      estadoStock: estado || estadoStock || undefined,
+    },
+  });
 
-  productos = productos.map((producto) => ({
-    ...producto,
-    estado: calcularEstadoProducto(producto),
-  }));
-
-  if (busqueda) {
-    const texto = busqueda.toLowerCase();
-
-    productos = productos.filter(
-      (p) =>
-        p.nombre.toLowerCase().includes(texto) ||
-        p.codigo.toLowerCase().includes(texto)
-    );
-  }
-
-  if (categoria) {
-    productos = productos.filter((p) => p.categoria === categoria);
-  }
-
-  if (estado) {
-    productos = productos.filter((p) => p.estado === estado);
-  }
+  const data = extraerData(response);
+  const productos = Array.isArray(data) ? data : [];
 
   return {
-    data: productos,
+    data: productos.map(mapearProducto),
   };
 };
 
 export const listarMovimientosInventario = async () => {
+  const response = await axiosInstance.get('/movimiento-inventario/listar');
+  const data = extraerData(response);
+  const movimientos = Array.isArray(data) ? data : [];
+
   return {
-    data: MOVIMIENTOS_MOCK,
+    data: movimientos.map(mapearMovimiento),
   };
 };
 
 export const crearProductoInventario = async (producto) => {
-  const productos = obtenerProductosGuardados();
-
-  const nuevoProducto = {
-    ...producto,
-    idProducto: Date.now(),
-    stockActual: Number(producto.stockActual),
-    stockMinimo: Number(producto.stockMinimo),
-    precioCosto: Number(producto.precioCosto),
-    precioVenta: Number(producto.precioVenta),
+  const payload = {
+    codigoProducto: producto.codigo?.trim(),
+    nombreProducto: producto.nombre?.trim(),
+    descripcion: producto.descripcion?.trim() || null,
+    unidadMedida: producto.unidad || producto.unidadMedida || 'UNIDAD',
+    cantidadInicial: Number(producto.stockActual ?? producto.cantidadInicial ?? 0),
+    stockMinimo: Number(producto.stockMinimo ?? 0),
   };
 
-  const actualizados = [nuevoProducto, ...productos];
-
-  guardarProductos(actualizados);
+  const response = await axiosInstance.post('/inventario/productos', payload);
+  const data = extraerData(response);
 
   return {
-    data: nuevoProducto,
-    message: 'Producto creado temporalmente',
+    data: mapearProducto(data),
+    message: response?.data?.message || 'Producto registrado correctamente',
   };
 };
