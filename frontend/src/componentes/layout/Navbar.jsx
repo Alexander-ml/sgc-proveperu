@@ -3,8 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 const Navbar = () => {
   const { usuario, rol, logout } = useAuth();
 
-  const cerrarSesion = () => {
-    logout();
+  const cerrarSesion = async () => {
+    await logout();
     window.location.replace('/login');
   };
 

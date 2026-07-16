@@ -8,19 +8,18 @@ import {
   obtenerDetalleVenta,
 } from '../../services/ventaService';
 
-const METODOS_PAGO = [
-  { id: '', nombre: 'Todos los pagos' },
-  { id: 1, nombre: 'Efectivo' },
-  { id: 2, nombre: 'Transferencia' },
-  { id: 3, nombre: 'Yape' },
-  { id: 4, nombre: 'POS' },
-];
+import { obtenerOpcionesCompra } from '../../services/comprasService';
 
 const VentasPage = () => {
   const [ventas, setVentas] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [estadoVenta, setEstadoVenta] = useState('');
   const [metodoPagoId, setMetodoPagoId] = useState('');
+  const [tipoComprobante, setTipoComprobante] = useState('');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
+  const [metodosPago, setMetodosPago] = useState([]);
+
   const [pagina, setPagina] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(0);
   const [totalElementos, setTotalElementos] = useState(0);
@@ -31,6 +30,8 @@ const VentasPage = () => {
   const [mostrarDetalle, setMostrarDetalle] = useState(false);
   const [detalleVenta, setDetalleVenta] = useState(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+
+  const obtenerData = (response) => response?.data ?? response;
 
   const formatearMoneda = (valor) => {
     const numero = Number(valor || 0);
@@ -44,9 +45,7 @@ const VentasPage = () => {
   const formatearFecha = (fecha) => {
     if (!fecha) return '-';
 
-    const date = new Date(fecha);
-
-    return date.toLocaleDateString('es-PE', {
+    return new Date(fecha).toLocaleDateString('es-PE', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -56,9 +55,7 @@ const VentasPage = () => {
   const formatearHora = (fecha) => {
     if (!fecha) return '';
 
-    const date = new Date(fecha);
-
-    return date.toLocaleTimeString('es-PE', {
+    return new Date(fecha).toLocaleTimeString('es-PE', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -67,7 +64,10 @@ const VentasPage = () => {
   const obtenerNombreCliente = (cliente) => {
     if (!cliente) return 'Sin cliente';
 
+    if (typeof cliente === 'string') return cliente;
+
     return (
+      cliente.nombreVisible ||
       cliente.nombreCompleto ||
       cliente.razonSocial ||
       cliente.nombre ||
@@ -154,10 +154,23 @@ const VentasPage = () => {
     return (
       pago.nombreMetodoPago ||
       pago.metodoPago ||
+      pago.metodoPagoNombre ||
       pago.nombre ||
       pago.descripcion ||
       'Pago'
     );
+  };
+
+  const cargarOpcionesFiltros = async () => {
+    try {
+      const response = await obtenerOpcionesCompra();
+      const data = obtenerData(response);
+
+      setMetodosPago(data?.metodosPago || []);
+    } catch (error) {
+      console.error('Error cargando métodos de pago:', error);
+      setMetodosPago([]);
+    }
   };
 
   const cargarVentas = async () => {
@@ -167,8 +180,11 @@ const VentasPage = () => {
 
       const response = await listarVentas({
         q: busqueda,
+        tipoComprobante,
         estadoVenta,
         metodoPagoId,
+        fechaInicio: fechaInicio ? `${fechaInicio}T00:00:00` : '',
+        fechaFin: fechaFin ? `${fechaFin}T23:59:59` : '',
         page: pagina,
         size: 20,
         sort: 'fechaHoraVenta',
@@ -192,13 +208,27 @@ const VentasPage = () => {
   };
 
   useEffect(() => {
+    cargarOpcionesFiltros();
+  }, []);
+
+  useEffect(() => {
     cargarVentas();
-  }, [pagina, estadoVenta, metodoPagoId]);
+  }, [pagina, estadoVenta, metodoPagoId, tipoComprobante, fechaInicio, fechaFin]);
 
   const buscarVentas = (e) => {
     e.preventDefault();
     setPagina(0);
     cargarVentas();
+  };
+
+  const limpiarFiltros = () => {
+    setBusqueda('');
+    setEstadoVenta('');
+    setMetodoPagoId('');
+    setTipoComprobante('');
+    setFechaInicio('');
+    setFechaFin('');
+    setPagina(0);
   };
 
   const abrirDetalle = async (idVenta) => {
@@ -310,7 +340,7 @@ const VentasPage = () => {
 
       <form onSubmit={buscarVentas} className="mb-3">
         <div className="row g-2 align-items-center">
-          <div className="col-12 col-lg-4">
+          <div className="col-12 col-xl-3">
             <div className="input-group">
               <span className="input-group-text bg-white">
                 <i className="bi bi-search text-muted"></i>
@@ -326,7 +356,7 @@ const VentasPage = () => {
             </div>
           </div>
 
-          <div className="col-12 col-md-4 col-lg-2">
+          <div className="col-12 col-md-6 col-xl-2">
             <select
               className="form-select app-select"
               value={estadoVenta}
@@ -341,7 +371,7 @@ const VentasPage = () => {
             </select>
           </div>
 
-          <div className="col-12 col-md-4 col-lg-2">
+          <div className="col-12 col-md-6 col-xl-2">
             <select
               className="form-select app-select"
               value={metodoPagoId}
@@ -350,22 +380,68 @@ const VentasPage = () => {
                 setPagina(0);
               }}
             >
-              {METODOS_PAGO.map((metodo) => (
-                <option key={metodo.id} value={metodo.id}>
-                  {metodo.nombre}
+              <option value="">Todos los pagos</option>
+
+              {metodosPago.map((metodo) => (
+                <option
+                  key={metodo.idMetodoPago}
+                  value={metodo.idMetodoPago}
+                >
+                  {metodo.nombreMetodoPago}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="col-12 col-md-4 col-lg-2">
+          <div className="col-12 col-md-6 col-xl-2">
+            <select
+              className="form-select app-select"
+              value={tipoComprobante}
+              onChange={(e) => {
+                setTipoComprobante(e.target.value);
+                setPagina(0);
+              }}
+            >
+              <option value="">Todos los comprobantes</option>
+              <option value="BOLETA">Boleta</option>
+              <option value="FACTURA">Factura</option>
+              <option value="NOTA">Nota</option>
+            </select>
+          </div>
+
+          <div className="col-12 col-md-6 col-xl-1">
+            <input
+              type="date"
+              className="form-control app-input"
+              value={fechaInicio}
+              onChange={(e) => {
+                setFechaInicio(e.target.value);
+                setPagina(0);
+              }}
+              title="Fecha inicio"
+            />
+          </div>
+
+          <div className="col-12 col-md-6 col-xl-1">
+            <input
+              type="date"
+              className="form-control app-input"
+              value={fechaFin}
+              onChange={(e) => {
+                setFechaFin(e.target.value);
+                setPagina(0);
+              }}
+              title="Fecha fin"
+            />
+          </div>
+
+          <div className="col-12 col-md-6 col-xl-1">
             <button type="submit" className="btn btn-outline-primary w-100">
-              <i className="bi bi-search me-2"></i>
-              Buscar
+              <i className="bi bi-search"></i>
             </button>
           </div>
 
-          <div className="col-12 col-lg-2 text-lg-end">
+          <div className="col-12 col-xl-2">
             <button
               type="button"
               className="btn btn-primary app-btn-primary w-100"
@@ -377,12 +453,23 @@ const VentasPage = () => {
               Nueva Venta
             </button>
           </div>
+
+          <div className="col-12">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={limpiarFiltros}
+            >
+              <i className="bi bi-eraser me-1"></i>
+              Limpiar filtros
+            </button>
+          </div>
         </div>
       </form>
 
       <div className="app-card">
         <div className="table-responsive">
-          <table className="table align-middle mb-0 app-table">
+          <table className="table align-middle mb-0 app-table sales-table">
             <thead>
               <tr>
                 <th>N° Venta</th>
@@ -588,7 +675,7 @@ const VentasPage = () => {
                   </h6>
 
                   <div className="table-responsive mb-4">
-                    <table className="table table-sm align-middle app-table">
+                    <table className="table align-middle app-table sales-table">
                       <thead>
                         <tr>
                           <th>Producto</th>
