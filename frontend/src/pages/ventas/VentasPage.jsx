@@ -64,7 +64,10 @@ const VentasPage = () => {
   const obtenerNombreCliente = (cliente) => {
     if (!cliente) return 'Sin cliente';
 
+    if (typeof cliente === 'string') return cliente;
+
     return (
+      cliente.nombreVisible ||
       cliente.nombreCompleto ||
       cliente.razonSocial ||
       cliente.nombre ||
@@ -466,7 +469,7 @@ const VentasPage = () => {
 
       <div className="app-card">
         <div className="table-responsive">
-          <table className="table align-middle mb-0 app-table">
+          <table className="table align-middle mb-0 app-table sales-table">
             <thead>
               <tr>
                 <th>N° Venta</th>
@@ -672,7 +675,7 @@ const VentasPage = () => {
                   </h6>
 
                   <div className="table-responsive mb-4">
-                    <table className="table table-sm align-middle app-table">
+                    <table className="table align-middle app-table sales-table">
                       <thead>
                         <tr>
                           <th>Producto</th>

@@ -8,6 +8,7 @@ import {
   obtenerOpcionesCompra,
   listarCompras,
   listarProveedores,
+  listarComprasPorProveedor,
   crearCompra,
   crearProveedor,
   obtenerDetalleCompra,
@@ -538,9 +539,11 @@ const ComprasPage = () => {
     );
   };
 
-  const filtrarComprasPorProveedor = (proveedor) => {
-    const nombreProveedor = obtenerNombreProveedor(proveedor);
+  const filtrarComprasPorProveedor = async (proveedor) => {
+  const nombreProveedor = obtenerNombreProveedor(proveedor);
 
+  try {
+    setCargando(true);
     setTabActivo('compras');
     setBusqueda(nombreProveedor);
     setEstado('');
@@ -548,7 +551,16 @@ const ComprasPage = () => {
       busqueda: nombreProveedor,
       estado: '',
     });
-  };
+
+    const response = await listarComprasPorProveedor(proveedor.idProveedor);
+    setCompras(response.data || []);
+  } catch (error) {
+    console.error('Error listando compras por proveedor:', error);
+    alert('No se pudieron cargar las compras del proveedor');
+  } finally {
+    setCargando(false);
+  }
+};
 
   if (cargando) {
     return (
@@ -740,7 +752,7 @@ const ComprasPage = () => {
 
           <div className="app-card">
             <div className="table-responsive">
-              <table className="table align-middle mb-0 app-table">
+              <table className="table align-middle mb-0 app-table purchases-table">
                 <thead>
                   <tr>
                     <th>N° Compra</th>
@@ -1306,7 +1318,7 @@ const ComprasPage = () => {
                   </h6>
 
                   <div className="table-responsive mb-4">
-                    <table className="table table-sm align-middle app-table">
+                    <table className="table align-middle app-table purchases-table">
                       <thead>
                         <tr>
                           <th>Producto</th>

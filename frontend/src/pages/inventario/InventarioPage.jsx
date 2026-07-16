@@ -10,13 +10,30 @@ import {
   crearProductoInventario,
 } from '../../services/inventarioService';
 
-const CATEGORIAS = [
-  'Telas y Tapicería',
-  'Espumas y Rellenos',
-  'Pegamentos',
-  'Maderas y Tableros',
-  'Accesorios',
+const UNIDADES_MEDIDA = [
+  { value: 'UNIDAD', label: 'Unidad' },
+  { value: 'KG', label: 'Kilogramo' },
+  { value: 'GALON', label: 'Galon' },
+  { value: 'CUARTO', label: 'Cuarto' },
+  { value: 'BOLSA', label: 'Bolsa' },
+  { value: 'METRO', label: 'Metro' },
+  { value: 'M2', label: 'Metro cuadrado' },
+  { value: 'CAJA', label: 'Caja' },
+  { value: 'ROLLO', label: 'Rollo' },
+  { value: 'JUEGO', label: 'Juego' },
+  { value: 'BARRA', label: 'Barra' },
+  { value: 'PIE', label: 'Pie' },
+  { value: 'PLANCHA', label: 'Plancha' },
 ];
+
+const PRODUCTO_INICIAL = {
+  codigo: '',
+  nombre: '',
+  descripcion: '',
+  unidad: 'UNIDAD',
+  stockActual: 0,
+  stockMinimo: 0,
+};
 
 const InventarioPage = () => {
   const [tabActivo, setTabActivo] = useState('productos');
@@ -26,30 +43,22 @@ const InventarioPage = () => {
   const [movimientos, setMovimientos] = useState([]);
 
   const [busqueda, setBusqueda] = useState('');
-  const [categoria, setCategoria] = useState('');
   const [estado, setEstado] = useState('');
 
   const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
 
-  const [nuevoProducto, setNuevoProducto] = useState({
-    codigo: '',
-    nombre: '',
-    unidad: '',
-    categoria: 'Telas y Tapicería',
-    stockActual: 0,
-    stockMinimo: 0,
-    precioCosto: 0,
-    precioVenta: 0,
-  });
+  const [nuevoProducto, setNuevoProducto] = useState(PRODUCTO_INICIAL);
 
-  const formatearMoneda = (valor) => {
+  const formatearNumero = (valor) => {
     const numero = Number(valor || 0);
 
-    return `S/ ${numero.toLocaleString('es-PE', {
-      minimumFractionDigits: 2,
+    return numero.toLocaleString('es-PE', {
+      minimumFractionDigits: Number.isInteger(numero) ? 0 : 2,
       maximumFractionDigits: 2,
-    })}`;
+    });
   };
 
   const formatearFecha = (fechaHora) => {
@@ -65,7 +74,7 @@ const InventarioPage = () => {
   };
 
   const formatearHora = (fechaHora) => {
-    if (!fechaHora) return '-';
+    if (!fechaHora) return '';
 
     const fecha = new Date(fechaHora);
 
@@ -73,6 +82,10 @@ const InventarioPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const obtenerUnidadTexto = (unidad) => {
+    return UNIDADES_MEDIDA.find((item) => item.value === unidad)?.label || unidad || '-';
   };
 
   const obtenerEstadoTexto = (estadoProducto) => {
@@ -88,44 +101,66 @@ const InventarioPage = () => {
   };
 
   const calcularPorcentajeStock = (producto) => {
-    const minimo = Number(producto.stockMinimo || 1);
+    const minimo = Number(producto.stockMinimo || 0);
     const actual = Number(producto.stockActual || 0);
 
-    const porcentaje = Math.round((actual / minimo) * 100);
+    if (minimo <= 0) return actual > 0 ? 100 : 0;
 
-    return Math.min(porcentaje, 100);
+    const porcentaje = Math.round((actual / minimo) * 100);
+    return Math.min(Math.max(porcentaje, 0), 100);
   };
 
   const cargarDatos = async () => {
-    try {
-      setCargando(true);
+    setCargando(true);
+    setError('');
 
-      const resumenResponse = await obtenerResumenInventario();
-      const productosResponse = await listarProductosInventario({
-        busqueda,
-        categoria,
-        estado,
-      });
-      const movimientosResponse = await listarMovimientosInventario();
+    const [resumenResult, productosResult, movimientosResult] =
+      await Promise.allSettled([
+        obtenerResumenInventario(),
+        listarProductosInventario({
+          busqueda,
+          estado,
+        }),
+        listarMovimientosInventario(),
+      ]);
 
-      setResumen(resumenResponse.data);
-      setProductos(productosResponse.data || []);
-      setMovimientos(movimientosResponse.data || []);
-    } catch (error) {
-      console.error('Error cargando inventario:', error);
-      alert('No se pudo cargar el inventario');
-    } finally {
-      setCargando(false);
+    if (resumenResult.status === 'fulfilled') {
+      setResumen(resumenResult.value.data);
+    } else {
+      console.error('Error cargando dashboard de inventario:', resumenResult.reason);
+      setError('No se pudo cargar el resumen de inventario.');
     }
+
+    if (productosResult.status === 'fulfilled') {
+      setProductos(productosResult.value.data || []);
+    } else {
+      console.error('Error cargando productos de inventario:', productosResult.reason);
+      setProductos([]);
+      setError('No se pudo cargar la lista de productos.');
+    }
+
+    if (movimientosResult.status === 'fulfilled') {
+      setMovimientos(movimientosResult.value.data || []);
+    } else {
+      console.error('Error cargando movimientos de inventario:', movimientosResult.reason);
+      setMovimientos([]);
+    }
+
+    setCargando(false);
   };
 
   useEffect(() => {
     cargarDatos();
-  }, [categoria, estado]);
+  }, [estado]);
 
   const buscarProductos = (e) => {
     e.preventDefault();
     cargarDatos();
+  };
+
+  const limpiarFiltros = () => {
+    setBusqueda('');
+    setEstado('');
   };
 
   const handleChangeCrear = (e) => {
@@ -139,29 +174,28 @@ const InventarioPage = () => {
 
   const cerrarModalCrear = () => {
     setMostrarModalCrear(false);
-
-    setNuevoProducto({
-      codigo: '',
-      nombre: '',
-      unidad: '',
-      categoria: 'Telas y Tapicería',
-      stockActual: 0,
-      stockMinimo: 0,
-      precioCosto: 0,
-      precioVenta: 0,
-    });
+    setNuevoProducto(PRODUCTO_INICIAL);
   };
 
   const handleCrearProducto = async (e) => {
     e.preventDefault();
 
     try {
+      setGuardando(true);
       await crearProductoInventario(nuevoProducto);
       cerrarModalCrear();
-      cargarDatos();
-    } catch (error) {
-      console.error('Error creando producto:', error);
-      alert('No se pudo crear el producto');
+      await cargarDatos();
+    } catch (errorCrear) {
+      console.error('Error creando producto:', errorCrear);
+
+      const mensaje =
+        errorCrear.response?.data?.message ||
+        errorCrear.response?.data?.error ||
+        'No se pudo crear el producto';
+
+      alert(mensaje);
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -192,12 +226,19 @@ const InventarioPage = () => {
         <p className="page-subtitle mb-0">Control de stock y productos</p>
       </div>
 
+      {error && (
+        <div className="alert alert-warning">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </div>
+      )}
+
       <div className="row g-3 mb-4">
         <div className="col-12 col-md-6 col-xl-3">
           <SummaryCard
             title="Total Productos"
             value={resumen?.totalProductos ?? 0}
-            description="En catálogo activo"
+            description="En catalogo activo"
             color="primary"
           />
         </div>
@@ -206,7 +247,7 @@ const InventarioPage = () => {
           <SummaryCard
             title="Sin Stock"
             value={resumen?.sinStock ?? 0}
-            description="Requieren reabastecimiento urgente"
+            description="Requieren reposicion"
             color="danger"
           />
         </div>
@@ -215,7 +256,7 @@ const InventarioPage = () => {
           <SummaryCard
             title="Stock Bajo"
             value={resumen?.stockBajo ?? 0}
-            description="Por debajo del mínimo"
+            description="Debajo del minimo"
             color="warning"
           />
         </div>
@@ -224,7 +265,7 @@ const InventarioPage = () => {
           <SummaryCard
             title="Disponible"
             value={resumen?.disponible ?? 0}
-            description="Sobre el nivel mínimo"
+            description="Sobre el nivel minimo"
             color="success"
           />
         </div>
@@ -267,7 +308,7 @@ const InventarioPage = () => {
         <>
           <form onSubmit={buscarProductos} className="mb-3">
             <div className="row g-2">
-              <div className="col-12 col-lg-5">
+              <div className="col-12 col-lg-6">
                 <div className="input-group">
                   <span className="input-group-text bg-white">
                     <i className="bi bi-search text-muted"></i>
@@ -276,7 +317,7 @@ const InventarioPage = () => {
                   <input
                     type="text"
                     className="form-control app-input"
-                    placeholder="Buscar por nombre o código..."
+                    placeholder="Buscar por nombre o codigo..."
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                   />
@@ -284,21 +325,6 @@ const InventarioPage = () => {
               </div>
 
               <div className="col-12 col-md-4 col-lg-3">
-                <select
-                  className="form-select app-select"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                >
-                  <option value="">Todas las categorías</option>
-                  {CATEGORIAS.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-12 col-md-4 col-lg-2">
                 <select
                   className="form-select app-select"
                   value={estado}
@@ -317,24 +343,35 @@ const InventarioPage = () => {
                   Buscar
                 </button>
               </div>
+
+              <div className="col-12 col-md-4 col-lg-1">
+                <button
+                  className="btn btn-outline-secondary w-100"
+                  type="button"
+                  onClick={limpiarFiltros}
+                  title="Limpiar filtros"
+                >
+                  <i className="bi bi-eraser"></i>
+                </button>
+              </div>
             </div>
           </form>
 
           <div className="app-card">
             <div className="table-responsive">
-              <table className="table align-middle mb-0 app-table">
+              <table className="table align-middle mb-0 app-table inventory-table">
                 <thead>
                   <tr>
-                    <th>Código</th>
+                    <th>Codigo</th>
                     <th>Producto</th>
-                    <th>Categoría</th>
+                    <th>Descripcion</th>
                     <th>Nivel de Stock</th>
                     <th className="text-center">Stock Actual</th>
-                    <th className="text-center">Mínimo</th>
-                    <th className="text-end">P. Costo</th>
-                    <th className="text-end">P. Venta</th>
+                    <th className="text-center">Minimo</th>
+                    <th>Unidad</th>
                     <th>Estado</th>
-                    <th className="text-center">Acción</th>
+                    <th>Actualizado</th>
+                    <th className="text-center">Accion</th>
                   </tr>
                 </thead>
 
@@ -360,11 +397,13 @@ const InventarioPage = () => {
                             <strong>{producto.nombre}</strong>
                             <br />
                             <span className="text-muted small">
-                              {producto.unidad}
+                              ID: {producto.idProducto}
                             </span>
                           </td>
 
-                          <td>{producto.categoria}</td>
+                          <td className="text-muted">
+                            {producto.descripcion || 'Sin descripcion'}
+                          </td>
 
                           <td>
                             <div className="d-flex align-items-center gap-2">
@@ -391,20 +430,14 @@ const InventarioPage = () => {
                           </td>
 
                           <td className="text-center fw-bold">
-                            {producto.stockActual}
+                            {formatearNumero(producto.stockActual)}
                           </td>
 
                           <td className="text-center text-muted">
-                            {producto.stockMinimo}
+                            {formatearNumero(producto.stockMinimo)}
                           </td>
 
-                          <td className="text-end">
-                            {formatearMoneda(producto.precioCosto)}
-                          </td>
-
-                          <td className="text-end fw-bold">
-                            {formatearMoneda(producto.precioVenta)}
-                          </td>
+                          <td>{obtenerUnidadTexto(producto.unidad)}</td>
 
                           <td>
                             <BadgeStatus
@@ -414,13 +447,21 @@ const InventarioPage = () => {
                             </BadgeStatus>
                           </td>
 
+                          <td>
+                            <strong>{formatearFecha(producto.fechaHoraActualizacion)}</strong>
+                            <br />
+                            <span className="text-muted small">
+                              {formatearHora(producto.fechaHoraActualizacion)}
+                            </span>
+                          </td>
+
                           <td className="text-center">
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-secondary"
-                              title="Actualizar stock"
+                              title="Pendiente de endpoint para ajustar stock"
                               onClick={() =>
-                                alert('Pendiente de endpoint para actualizar stock')
+                                alert('Pendiente de backend: endpoint para ajuste manual de stock')
                               }
                             >
                               <i className="bi bi-arrow-clockwise"></i>
@@ -433,6 +474,12 @@ const InventarioPage = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="alert alert-info mt-3">
+            <i className="bi bi-info-circle me-2"></i>
+            Pendiente de backend: categoria, precio costo, precio venta, editar producto,
+            eliminar producto y ajuste manual de stock.
           </div>
         </>
       )}
@@ -460,48 +507,57 @@ const InventarioPage = () => {
               </thead>
 
               <tbody>
-                {movimientos.map((movimiento) => (
-                  <tr key={movimiento.idMovimiento}>
-                    <td>
-                      <strong>{formatearFecha(movimiento.fechaHora)}</strong>
-                      <br />
-                      <span className="text-muted small">
-                        {formatearHora(movimiento.fechaHora)}
-                      </span>
+                {movimientos.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center py-5 text-muted">
+                      <i className="bi bi-inbox fs-3 d-block mb-2"></i>
+                      No hay movimientos para mostrar.
                     </td>
-
-                    <td>{movimiento.producto}</td>
-
-                    <td>
-                      <span
-                        className={`badge app-badge ${
-                          movimiento.tipo === 'ENTRADA'
-                            ? 'bg-success bg-opacity-10 text-success'
-                            : 'bg-primary bg-opacity-10 text-primary'
-                        }`}
-                      >
-                        {movimiento.tipo === 'ENTRADA' ? 'Entrada' : 'Salida'}
-                      </span>
-                    </td>
-
-                    <td className="text-center fw-bold text-primary">
-                      {movimiento.tipo === 'ENTRADA' ? '+' : '-'}
-                      {movimiento.cantidad}
-                    </td>
-
-                    <td>{movimiento.motivo}</td>
-
-                    <td className="text-center text-muted">
-                      {movimiento.stockAnterior}
-                    </td>
-
-                    <td className="text-center fw-bold">
-                      {movimiento.stockActual}
-                    </td>
-
-                    <td>{movimiento.usuario}</td>
                   </tr>
-                ))}
+                ) : (
+                  movimientos.map((movimiento) => (
+                    <tr key={movimiento.idMovimiento}>
+                      <td>
+                        <strong>{formatearFecha(movimiento.fechaHora)}</strong>
+                        <br />
+                        <span className="text-muted small">
+                          {formatearHora(movimiento.fechaHora)}
+                        </span>
+                      </td>
+
+                      <td>{movimiento.producto}</td>
+
+                      <td>
+                        <span
+                          className={`badge app-badge ${
+                            movimiento.tipo === 'ENTRADA'
+                              ? 'bg-success bg-opacity-10 text-success'
+                              : 'bg-primary bg-opacity-10 text-primary'
+                          }`}
+                        >
+                          {movimiento.tipo === 'ENTRADA' ? 'Entrada' : 'Salida'}
+                        </span>
+                      </td>
+
+                      <td className="text-center fw-bold text-primary">
+                        {movimiento.tipo === 'ENTRADA' ? '+' : '-'}
+                        {formatearNumero(movimiento.cantidad)}
+                      </td>
+
+                      <td>{movimiento.motivo}</td>
+
+                      <td className="text-center text-muted">
+                        {formatearNumero(movimiento.stockAnterior)}
+                      </td>
+
+                      <td className="text-center fw-bold">
+                        {formatearNumero(movimiento.stockActual)}
+                      </td>
+
+                      <td>{movimiento.usuario}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -533,61 +589,50 @@ const InventarioPage = () => {
                 <div className="modal-body">
                   <div className="row g-3">
                     <div className="col-12 col-md-4">
-                      <label className="form-label">Código</label>
+                      <label className="form-label">Codigo *</label>
                       <input
                         type="text"
                         name="codigo"
                         className="form-control app-input"
                         value={nuevoProducto.codigo}
                         onChange={handleChangeCrear}
+                        placeholder="Ej: TEL-001"
                         required
                       />
                     </div>
 
                     <div className="col-12 col-md-8">
-                      <label className="form-label">Producto</label>
+                      <label className="form-label">Producto *</label>
                       <input
                         type="text"
                         name="nombre"
                         className="form-control app-input"
                         value={nuevoProducto.nombre}
                         onChange={handleChangeCrear}
+                        placeholder="Ej: Tela Terciopelo Azul"
                         required
                       />
                     </div>
 
                     <div className="col-12 col-md-4">
-                      <label className="form-label">Unidad</label>
-                      <input
-                        type="text"
-                        name="unidad"
-                        className="form-control app-input"
-                        value={nuevoProducto.unidad}
-                        onChange={handleChangeCrear}
-                        placeholder="Metro, Unidad, Plancha..."
-                        required
-                      />
-                    </div>
-
-                    <div className="col-12 col-md-8">
-                      <label className="form-label">Categoría</label>
+                      <label className="form-label">Unidad *</label>
                       <select
-                        name="categoria"
+                        name="unidad"
                         className="form-select app-select"
-                        value={nuevoProducto.categoria}
+                        value={nuevoProducto.unidad}
                         onChange={handleChangeCrear}
                         required
                       >
-                        {CATEGORIAS.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
+                        {UNIDADES_MEDIDA.map((unidad) => (
+                          <option key={unidad.value} value={unidad.value}>
+                            {unidad.label}
                           </option>
                         ))}
                       </select>
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Stock actual</label>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label">Cantidad inicial *</label>
                       <input
                         type="number"
                         name="stockActual"
@@ -595,12 +640,13 @@ const InventarioPage = () => {
                         value={nuevoProducto.stockActual}
                         onChange={handleChangeCrear}
                         min="0"
+                        step="0.01"
                         required
                       />
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Stock mínimo</label>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label">Stock minimo *</label>
                       <input
                         type="number"
                         name="stockMinimo"
@@ -608,43 +654,29 @@ const InventarioPage = () => {
                         value={nuevoProducto.stockMinimo}
                         onChange={handleChangeCrear}
                         min="0"
-                        required
-                      />
-                    </div>
-
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Precio costo</label>
-                      <input
-                        type="number"
-                        name="precioCosto"
-                        className="form-control app-input"
-                        value={nuevoProducto.precioCosto}
-                        onChange={handleChangeCrear}
-                        min="0"
                         step="0.01"
                         required
                       />
                     </div>
 
-                    <div className="col-12 col-md-6">
-                      <label className="form-label">Precio venta</label>
-                      <input
-                        type="number"
-                        name="precioVenta"
+                    <div className="col-12">
+                      <label className="form-label">Descripcion</label>
+                      <textarea
+                        name="descripcion"
                         className="form-control app-input"
-                        value={nuevoProducto.precioVenta}
+                        value={nuevoProducto.descripcion}
                         onChange={handleChangeCrear}
-                        min="0"
-                        step="0.01"
-                        required
-                      />
+                        rows="3"
+                        placeholder="Descripcion breve del producto"
+                      ></textarea>
                     </div>
                   </div>
 
                   <div className="alert alert-info mt-3 mb-0">
                     <i className="bi bi-info-circle me-2"></i>
-                    Este registro se guarda temporalmente en el navegador. Cuando
-                    tengas el endpoint, se cambiará por una llamada real al backend.
+                    Este formulario usa el endpoint real POST /api/inventario/productos.
+                    Categoria, precios y ajuste manual quedan pendientes porque aun no
+                    existen en el backend.
                   </div>
                 </div>
 
@@ -653,6 +685,7 @@ const InventarioPage = () => {
                     type="button"
                     className="btn btn-secondary"
                     onClick={cerrarModalCrear}
+                    disabled={guardando}
                   >
                     Cancelar
                   </button>
@@ -660,9 +693,10 @@ const InventarioPage = () => {
                   <button
                     type="submit"
                     className="btn btn-primary app-btn-primary"
+                    disabled={guardando}
                   >
                     <i className="bi bi-save me-2"></i>
-                    Guardar Producto
+                    {guardando ? 'Guardando...' : 'Guardar Producto'}
                   </button>
                 </div>
               </form>
