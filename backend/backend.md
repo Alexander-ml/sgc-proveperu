@@ -73,12 +73,12 @@ backend/src/main/java/com/proyecto/
 │   ├── controller/
 │   ├── service/
 │   └── dto/
-├── ventas/          ← Módulo 
-├── compras/         ← Módulo 
-├── inventario/      ← Módulo 
-├── clientes/        ← Módulo 
-├── usuarios/        ← Módulo 
-└── caja/            ← Módulo 
+├── m01_ventas/            ← Módulo 
+├── m02_inventario/        ← Módulo 
+├── m03_comptras/          ← Módulo 
+├── m04_caja_pagos/        ← Módulo 
+├── m05_gestion_clientes/  ← Módulo 
+└── m06_usuarios/          ← Módulo 
 ```
  
 ---
@@ -94,6 +94,8 @@ modulo/
 ├── repository/
 ├── mapper/
 ├── entity/
+├── enums/
+├── validators/
 └── dto/
     ├── request/
     └── response/
@@ -162,15 +164,51 @@ modulo/
 **Qué hace:** `NuevaVentaRequest → Venta` (para crear desde el frontend), `Venta → VentaResponse` (para devolver al frontend). MapStruct genera el código real en tiempo de compilación, no en tiempo de ejecución, por lo que no hay overhead de performance.
  
 ---
- 
-### Por Qué Esta Arquitectura
- 
-**Mantenibilidad:** Cada capa tiene una responsabilidad única. Si cambia la base de datos, solo cambia la entidad y el repositorio. Si cambia lo que el frontend necesita ver, solo cambia el DTO de respuesta y el mapper.
- 
-**Escalabilidad en equipo:** Cualquier integrante puede trabajar en cualquier módulo sin necesitar entender todos los demás. La estructura es predecible.
- 
-**Testeabilidad:** Los servicios, que contienen la lógica crítica, pueden probarse con pruebas unitarias sin levantar el servidor ni conectarse a la base de datos. Mockito simula los repositorios.
- 
-**Seguridad:** Los datos sensibles nunca llegan al frontend porque los DTOs de respuesta solo incluyen lo que se quiere exponer.
- 
+
+#### `enums/`
+**Qué es:** Contiene los catálogos cerrados del dominio. Representa conceptos del negocio cuyos valores posibles son limitados, conocidos y controlados por la aplicación. No representan datos dinámicos almacenados por usuarios ni configuraciones modificables; representan reglas estables del negocio.
+
+**¿Para qué sirve?**
+Su objetivo es evitar que el sistema dependa de valores literales dispersos por el código. Centraliza los estados, tipos y clasificaciones del dominio en un único lugar. Actúa como una fuente oficial de valores válidos para un concepto específico.
+
+---
+
+#### `validators/`
+**Qué es:** Contiene componentes especializados en verificar reglas de validación. Su función es determinar si una información recibida cumple ciertos criterios antes de que el sistema continúe procesándola.
+
+**Para que sirve:** Su propósito es separar las validaciones de las reglas de negocio. Muchas veces los equipos mezclan: (validación, lógica de negocio, persistencia), dentro del mismo servicio. Eso genera clases gigantes difíciles de mantener.
+
+**¿Qué responsabilidad tiene?:** Validar una condición específica. 
+- No debe:
+  - guardar información,
+  - modificar datos,
+  - ejecutar procesos,
+  - tomar decisiones de negocio.
+
+- **Únicamente responde:** ¿Este dato cumple la regla o no?
+
+Esto cumple directamente el principio SRP.
+
+**¿Cuándo usarlo? - Cuando una regla:**
+- Es reutilizable: La misma validación aparece en varios procesos.
+- Pertenece a la entrada de datos: Su objetivo es verificar que los datos recibidos sean correctos.
+- Es independiente del caso de uso: Debe funcionar igual sin importar qué operación se esté ejecutando.
+
+**¿Cuándo NO usarlo? - No debe usarse para:**
+
+- Reglas transaccionales, Ejemplo:
+    - verificar stock,
+    - verificar saldo,
+    - verificar límites de crédito.
+- Eso pertenece al Service.
+
+**¿Con quién interactúa? - Normalmente interactúa con:**
+- DTO Request
+- Services
+- Exception Handling
+
+No debería depender de Controllers.
+
+```
+
 ---

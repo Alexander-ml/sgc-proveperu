@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <!-- Nombre de la aplicación -->
+    <property
+            name="APP_NAME"
+            value="SGC-PROVEPERU"/>
+
+    <!-- Salida por consola -->
+    <appender
+            name="CONSOLE"
+            class="ch.qos.logback.core.ConsoleAppender">
+
+        <encoder>
+
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level ${APP_NAME} %logger{36} - %msg%n</pattern>
+
+        </encoder>
+
+    </appender>
+
+    <!-- Logger principal -->
+    <root level="INFO">
+
+        <appender-ref ref="CONSOLE"/>
+
+    </root>
+
+</configuration>
