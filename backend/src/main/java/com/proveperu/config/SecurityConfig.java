@@ -166,44 +166,68 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 
-    /**
+        /**
      * Configura la política de Cross-Origin Resource Sharing (CORS) utilizada
-     * para controlar el acceso a la API desde aplicaciones externas.
+     * por la aplicación.
      *
      * <p>
-     * La configuración establece:
+     * En esta arquitectura el cliente React no consume directamente la API de
+     * Spring Boot, sino que todas las solicitudes son canalizadas a través de
+     * Nginx utilizando un proxy inverso sobre la ruta {@code /api}.
+     * </p>
+     *
+     * <p>
+     * Debido a ello, tanto el frontend como el backend son expuestos bajo el
+     * mismo origen (mismo protocolo, dominio e incluso puerto), evitando que el
+     * navegador considere las solicitudes como peticiones Cross-Origin en el
+     * entorno de producción.
+     * </p>
+     *
+     * <p>
+     * Esta configuración mantiene habilitado el soporte CORS para facilitar el
+     * desarrollo y futuras integraciones, permitiendo cualquier origen mediante
+     * patrones, sin utilizar credenciales (cookies o autenticación de sesión).
+     * La seguridad de la aplicación continúa siendo responsabilidad de Spring
+     * Security mediante autenticación JWT y reglas de autorización.
+     * </p>
+     *
+     * <p>
+     * La política define:
      * </p>
      * <ul>
-     *     <li>Orígenes autorizados para consumir la API.</li>
-     *     <li>Métodos HTTP permitidos.</li>
-     *     <li>Cabeceras aceptadas y expuestas.</li>
-     *     <li>Política de credenciales.</li>
-     *     <li>Tiempo de almacenamiento en caché de la configuración.</li>
+     *     <li>Orígenes permitidos mediante patrones.</li>
+     *     <li>Métodos HTTP soportados por la API.</li>
+     *     <li>Cabeceras aceptadas en las solicitudes.</li>
+     *     <li>Cabeceras expuestas al cliente.</li>
+     *     <li>Sin envío de credenciales HTTP.</li>
+     *     <li>Cacheo de la configuración CORS durante una hora.</li>
      * </ul>
      *
-     * @return fuente de configuración CORS aplicable a todas las rutas expuestas
-     *         por la aplicación.
+     * @return fuente de configuración CORS aplicada a todos los endpoints de la
+     *         aplicación.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost",
-                "http://localhost:80",
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "https://localhost",
-                "https://localhost:443"
+        
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false);
         config.setMaxAge(3600L);
 
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }
